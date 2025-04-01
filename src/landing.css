@@ -60,18 +60,18 @@ h3{
 }
 
 .herobutton{
-    border-radius: 30px;
+    border-radius: 30px !important;
     border: none;
-    background-color: #EEF2FE;
-    color: #5889BD;
-    text-align: center;
-    font-family: Montserrat;
-    font-size: .45em;
-    filter: drop-shadow(0px 4px 4px rgba(0, 0, 0, 0.25));
-    padding: 5px 10px;
-    font-weight: 600;
-    width: 10vw;
-    height: 5vh;
+    background-color: #EEF2FE !important;
+    color: #5889BD !important;
+    text-align: center !important;
+    font-family: Montserrat !important;
+    font-size: .45em !important;
+    filter: drop-shadow(0px 4px 4px rgba(0, 0, 0, 0.25)) !important;
+    padding: 5px 10px !important;
+    font-weight: 600 !important;
+    width: 10vw !important;
+    height: 5vh !important;
 }
 
 .herobuttons{
@@ -188,3 +188,30 @@ hr{
     width: 100%;
     height: 100%;
   }
+
+
+.patientbtn {
+    align-self: flex-start;
+    padding: 10px 20px;
+    background-color: pink;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.patientbtn {
+    background-color: teal;
+}
+
+.doctorbtn {
+    align-self: flex-start;
+    padding: 10px 20px;
+    background-color: pink;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+}
