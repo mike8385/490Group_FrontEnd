@@ -193,7 +193,7 @@ hr{
 .patientbtn {
     align-self: flex-start;
     padding: 10px 20px;
-    background-color: pink;
+    background-color: teal;
     color: white;
     border: none;
     border-radius: 4px;
@@ -201,9 +201,6 @@ hr{
     font-size: 16px;
 }
 
-.patientbtn {
-    background-color: teal;
-}
 
 .doctorbtn {
     align-self: flex-start;
@@ -214,4 +211,36 @@ hr{
     border-radius: 4px;
     cursor: pointer;
     font-size: 16px;
+}
+
+.patientlogin {
+    align-self: flex-start;
+    padding: 10px 20px;
+    background-color: pink;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+}
+.patientlgn {
+    align-self: flex-start ;
+    padding: 10px 20px !important;
+    background-color: teal !important;
+    color: white !important;
+    border: none;
+    border-radius: 4px !important;
+    cursor: pointer;
+    font-size: 16px !important;
+}
+
+.doctorlgn {
+    align-self: flex-start ;
+    padding: 10px 20px !important;
+    background-color: pink !important;
+    color: white !important;
+    border: none;
+    border-radius: 4px !important;
+    cursor: pointer;
+    font-size: 16px !important;
 }
