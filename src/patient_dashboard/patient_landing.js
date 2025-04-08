@@ -1,24 +1,10 @@
-<<<<<<< HEAD
-import React from "react";
-=======
 import React, { useState, useEffect, useRef } from "react"; 
->>>>>>> ea766dd4f87ee400905debcdc7c01f00f3f5d7e3
 import Patient_Navbar from "./patient_navbar"; 
 import Box from '@mui/material/Box';
 import Paper from '@mui/material/Paper';
 import Grid from '@mui/material/Grid';
 import { styled } from '@mui/material/styles';
 import FlowerBackgroundImg from "./patient_landing_assets/FlowerBackground.png"
-<<<<<<< HEAD
-
-const Item = styled(Paper)(({ theme }) => ({
-  backgroundColor: '#fff',
-  borderRadius:30,
-  ...theme.typography.body2,
-  padding: theme.spacing(1),
-  textAlign: 'center',
-  padding: 183,
-=======
 import overviewSurveyImg from "./patient_landing_assets/overviewSurveyImg.png"
 import {  Button, Typography, Modal} from "@mui/material";
 import ArrowCircleRightOutlinedIcon from '@mui/icons-material/ArrowCircleRightOutlined';
@@ -30,16 +16,12 @@ const Item = styled(Paper)(({ theme }) => ({
   padding: theme.spacing(1),
   textAlign: 'center',
   //padding: theme.spacing(2),
->>>>>>> ea766dd4f87ee400905debcdc7c01f00f3f5d7e3
   color: (theme.vars ?? theme).palette.text.secondary,
   ...theme.applyStyles('dark', {
     backgroundColor: '#1A2027',
   }),
 }));
 
-<<<<<<< HEAD
-function Patient_Landing() {
-=======
 const style = {
   position: 'absolute',
   top: '50%',
@@ -64,7 +46,6 @@ const closeSurveysModal = () => {
   setOpenSurvey(false);
 };
 
->>>>>>> ea766dd4f87ee400905debcdc7c01f00f3f5d7e3
   return (
     <div style={{ display: "flex" }}>
       {/* Sidebar/Navbar */}
@@ -72,18 +53,6 @@ const closeSurveysModal = () => {
 
       <div style={{ marginLeft: "3px", flexGrow: 1, padding: "20px" }}>
         <Box sx={{ flexGrow: 1 }}>
-<<<<<<< HEAD
-          <Grid container spacing={2} >
-            <Grid item xs={7}>
-              <Item sx={{background: "linear-gradient(110deg, #5889BD 6.67%, #719EC7 34.84%, #99C6DB 93.33%)"}}>xs=7</Item>
-            </Grid>
-            <Grid item xs={5}>
-              <Item sx={{backgroundColor:"#EEF2FE"}}>xs=5</Item>
-            </Grid>
-            <Grid item xs={4}>
-              <Item sx={{background: "linear-gradient(110deg, #5889BD 6.67%, #719EC7 34.84%, #99C6DB 93.33%)"}}>xs=4</Item>
-            </Grid>
-=======
           
           <Grid container spacing={2} >
             {/* item 1 */}
@@ -253,7 +222,6 @@ const closeSurveysModal = () => {
               <Item sx={{background: "linear-gradient(110deg, #5889BD 6.67%, #719EC7 34.84%, #99C6DB 93.33%)"}}>xs=4</Item>
             </Grid>
             {/* item 4 */}
->>>>>>> ea766dd4f87ee400905debcdc7c01f00f3f5d7e3
             <Grid item xs={4}>
               <Item  sx={{ 
     position: "relative",
@@ -276,10 +244,7 @@ const closeSurveysModal = () => {
     }
   }}><Box sx={{ position: "relative", zIndex: 2 }}>xs=4</Box></Item>
             </Grid>
-<<<<<<< HEAD
-=======
             {/* item 5 */}
->>>>>>> ea766dd4f87ee400905debcdc7c01f00f3f5d7e3
             <Grid item xs={4}>
               <Item sx={{background: "linear-gradient(110deg, #5889BD 6.67%, #719EC7 34.84%, #99C6DB 93.33%)", backgroundSize: "cover",}}>xs=4</Item>
             </Grid>

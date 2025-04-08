@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import React, { useState } from "react";
 import "./landing.css";
 import heroImage from "./assets/heroimage.png";
 import patient1 from "./assets/patient1.png";
@@ -9,32 +8,6 @@ import patient3 from "./assets/patient3.png";
 import doctor1 from "./assets/doctor1.png";
 import doctor2 from "./assets/doctor2.png";
 import doctor3 from "./assets/doctor3.png";
-
-import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
-import Typography from '@mui/material/Typography';
-import Modal from '@mui/material/Modal';
-import { useNavigate } from "react-router-dom";
-
-
-
-const style = {
-  position: 'absolute',
-  top: '50%',
-  left: '50%',
-  transform: 'translate(-50%, -50%)',
-  width: 400,
-  bgcolor: 'background.paper',
-  border: '2px solid #000',
-  boxShadow: 24,
-  p: 4,
-};
-
-import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
-import Typography from '@mui/material/Typography';
-import Modal from '@mui/material/Modal';
-import { useNavigate } from "react-router-dom";
 
 
 
