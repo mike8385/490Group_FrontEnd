@@ -11,7 +11,7 @@ import ArrowCircleRightOutlinedIcon from '@mui/icons-material/ArrowCircleRightOu
 const Item = styled(Paper)(({ theme }) => ({
   backgroundColor: '#fff',
   borderRadius:30,
-  height:390,
+  height:'47vh',
   ...theme.typography.body2,
   padding: theme.spacing(1),
   textAlign: 'center',
