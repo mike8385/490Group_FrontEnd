@@ -179,6 +179,13 @@ function Patient_Mealplan() {
       day: ''
     })
 
+    const [newPlanModalOpen, setNewPlanModalOpen] = useState(false);
+    const [newPlanData, setNewPlanData] = useState({
+      title: '',
+      author: '',
+      tags: ''
+    });
+
 
 
       
