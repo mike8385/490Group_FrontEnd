@@ -89,7 +89,7 @@ function Landing() {
                           >
                             <Box sx={style}>
                               <Typography id="modal-modal-title" variant="h6" component="h2" color="black">
-                                Patient Signup
+                                Patient Login
                               </Typography>
                                     <div className='labels'>
                                         <label className = 'def-label' htmlFor="first_name">Email: </label>
@@ -126,7 +126,7 @@ function Landing() {
                           >
                             <Box sx={style}>
                               <Typography id="modal-modal-title" variant="h6" component="h2" color="black">
-                                Doctor Signup
+                                Doctor Login
                               </Typography>
                                     <div className='labels'>
                                         <label htmlFor="first_name">Email: </label>
