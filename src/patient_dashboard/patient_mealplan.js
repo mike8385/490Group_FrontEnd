@@ -319,17 +319,32 @@ const handleDeleteMealPlan = (indexToDelete) => {
                             aria-describedby="modal-modal-description"
                           >
                             <Box sx={style}>
+                            <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
                               <Typography id="modal-modal-title" variant="h6" component="h2" color="black">
                                 Create Plan
                               </Typography>
-                                  <Button
-                                    onClick={() => {
-                                      setTag('');
-                                      setNewPlanData({ ...values, day: ''});
-                                      setCreate(false);}}
-                                    sx={{ textTransform: 'none', fontFamily: 'Montserrat' }}>
-                                    ← Back to Meal Plans
-                                  </Button>
+                              <Button
+                                onClick={() => {
+                                  setTag('');
+                                  setNewPlanData({ title: '', author: '', tag: '' });
+                                  setOpenCreate(false); // ✅ close modal
+                                }}
+                                size="small"
+                                sx={{
+                                  textTransform: 'none',
+                                  fontFamily: 'Montserrat',
+                                  color: '#5A8BBE',
+                                  fontWeight: 500,
+                                  fontSize: '0.85em', // smaller font
+                                  padding: '2px 8px', // tight padding
+                                  minWidth: 'fit-content', // shrink to content
+                                }}
+                              >
+                                ← Back to Meal Plans
+                              </Button>
+                            </Box>
+
+
                                     <div className='labels'>
                                         <label className = 'def-label' htmlFor="first_name">Title: </label>
                                         <input type='text'
