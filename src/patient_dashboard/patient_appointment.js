@@ -135,7 +135,8 @@ function Patient_Appointment() {
         const diffInDays = diffInTime / (1000 * 3600 * 24); // Convert milliseconds to days
         
         // Set visibility of input box
-        setShowInput(diffInDays <= 1);
+        console.log(diffInDays)
+        setShowInput(diffInDays > 1 && diffInDays < 3); //Change this to 2 to be within a day
       } catch (error) {
         console.error("Error fetching appointment:", error);
       }
