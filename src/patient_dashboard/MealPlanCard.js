@@ -16,8 +16,9 @@ import CloseIcon from '@mui/icons-material/Close';
 const apiUrl = process.env.REACT_APP_API_URL;
 
 
-export default function MealPlanCard({ meal, patientInfo}) {
-  
+export default function MealPlanCard({ meal, patientInfo, removeFromLikedPosts }) {
+  console.log("Meal object:", meal);
+
   const {
     image = '',
     title = 'Untitled',
@@ -39,70 +40,228 @@ export default function MealPlanCard({ meal, patientInfo}) {
   //const [likes, setLikes] = useState(meal.likes);
   const [comments, setComments] = useState(meal.comments || []);
   const [newComment, setNewComment] = useState("");
+  const [commentCount, setCommentCount]= useState(0);
+  const [commentsLoaded, setCommentsLoaded] = useState(false);
   const [likes, setLikes] = useState(initialLikes);
-  const [liked, setLiked] = useState(false);
+const [liked, setLiked] = useState( false);
   const [added, setAdded] = useState(false);
-
+  const [likeCount, setLikeCount] = useState(0);
   const [expanded, setExpanded] = useState(false);
 
-  const handleExpandClick = () => setExpanded(!expanded);
-  //const handleLike = () => setLikes(likes + 1);
-  const handleAddComment = () => {
-    if (newComment.trim() === "") return;
+const handleExpandClick = async () => {
+  setExpanded(!expanded);
+  const post_id = meal.post_id;
 
-    const fullName = `${patientInfo.firstName} ${patientInfo.lastName}`;
-    const updatedComments = [
-      ...comments,
-      { firstName: patientInfo.firstName, lastName: patientInfo.lastName, text: newComment }
-    ];
-    setComments(updatedComments);
-    setNewComment("");
+  if (!commentsLoaded) {
+    try {
+      const response = await fetch(`${apiUrl}/posts/comment/${post_id}`);
+      const data = await response.json();
+
+      if (response.ok) {
+        const formattedComments = data.map(comment => ({
+          firstName: comment.first_name,
+          lastName: comment.last_name,
+          text: comment.comment_text,
+          created_at: comment.created_at
+        }));
+
+        setComments(formattedComments);
+        setCommentsLoaded(true);
+      } else {
+        console.error("Failed to load comments:", data);
+      }
+    } catch (error) {
+      console.error("Error fetching comments:", error);
+    }
+  }
+};
+  //const handleLike = () => setLikes(likes + 1);
+
+  const handleAddComment = async () => {
+  const post_id=meal.post_id
+  const user_id = patientInfo.user_id
+  console.log('here', user_id);
+  if (newComment.trim() === "") return;
+  const commentData = {
+    post_id: post_id,
+    user_id: user_id,  
+    comment_text: newComment
   };
+
+  try {
+    const response = await fetch(`${apiUrl}/posts/comment`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(commentData)
+    });
+
+    const data = await response.json();
+
+    if (response.status === 201) {
+      const newCommentObj = {
+        post_id:post_id,
+        firstName: patientInfo.firstName,
+        lastName: patientInfo.lastName,
+        text: newComment,
+        created_at: new Date().toISOString()  // or use data.created_at if returned
+      };
+      console.log("successfully added comment to backend")
+
+      setComments([newCommentObj, ...comments]);
+      setNewComment("");
+      
+      //add code ot chnage the comment count in the database
+      const updatedPostRes = await fetch(`${apiUrl}/posts/${post_id}`);
+      const updatedPost = await updatedPostRes.json();
+
+      if (updatedPostRes.ok && updatedPost.comment_count !== undefined) {
+        setCommentCount(updatedPost.comment_count);
+      }else {
+      console.error("Failed to add comment:", data);
+      }
+    } else {
+      console.error("Failed to add comment:", data);
+    }
+  } catch (error) {
+    console.error("Error while adding comment:", error);
+  }
+};
+
+useEffect(() => {
+  if (meal.comment_count !== undefined) {
+    setCommentCount(meal.comment_count);
+  }
+  if (meal.like_count !== undefined) {
+    setLikeCount(meal.like_count);
+  }
+}, [meal.comment_count, meal.like_count]);
+
+
+useEffect(() => {
+  const post_id = meal?.post_id;
+  const user_id = patientInfo?.user_id;
+  if (!post_id || !user_id) return;
+
+  const checkIfLiked = async () => {
+    try {
+      const response = await fetch(`${apiUrl}/posts/is-liked`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          post_id,
+          user_id: user_id
+        })
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        setLiked(data.is_liked);
+      } else {
+        console.error("Failed to fetch liked status:", data);
+        setLiked(false);
+      }
+    } catch (error) {
+      console.error("Error checking if post is liked:", error);
+      setLiked(false);
+    }
+  };
+
+  checkIfLiked();
+}, [meal?.post_id, patientInfo?.user_id]);
+
   
 
-
-  const handleLike = async () => {
-    setLiked(!liked);
+const handleLike = async () => {
+    
     const post_id = meal.post_id;
     const patient_id = patientInfo.patient_id; // assuming this is passed correctly
-    console.log(post_id);
+  
+
     if (!post_id || !patient_id) {
       console.error("Missing post_id or patient_id");
+   
       return;
     }
-  
+    const wasLiked = liked;
+    setLiked(!wasLiked)
     try {
-      console.log('Sending like request:', {
-        post_id: meal.post_id,
-        patient_id: patientInfo?.patient_id,
-        "doctor_id": null,
-      });      const response = await fetch(`${apiUrl}/posts/like`, {
-        method: 'POST',
+      if(!wasLiked){
+        
+          console.log('Sending like request:', {
+          post_id: meal.post_id,
+          patient_id: patientInfo?.patient_id,
+          "doctor_id": null,
+        });      const response = await fetch(`${apiUrl}/posts/like`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            post_id: post_id,
+            patient_id:patient_id,
+            doctor_id: null,
+          }),
+        });
+    
+        const data = await response.json();
+        
+        if (response.status === 201) {
+    
+          //setLiked(true);
+          console.log("Post  successfully liked:", data);
+
+          const updatedPostRes = await fetch(`${apiUrl}/posts/${post_id}`);
+          const updatedPost = await updatedPostRes.json();
+
+          if (updatedPostRes.ok && updatedPost.like_count !== undefined) {
+            setLikeCount(updatedPost.like_count);
+          }
+         else {
+          console.error("Failed to update like:", data);
+        }
+
+        }else {
+          console.error("Like failed:", data);
+        }
+      }else {
+      // Unliking the post
+      const response = await fetch(`${apiUrl}/posts/unlike`, {
+        method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           post_id: post_id,
-          patient_id:patient_id,
+          patient_id: patient_id,
           doctor_id: null,
         }),
       });
-  
-      const data = await response.json();
-      
-      if (response.status === 201) {
-  
-        setLiked(true);
-        setLikes(likes + 1);
-        console.log("Post liked successfully:", data);
-        localStorage.setItem(`liked-${post_id}`, 'true');
 
-      } else if (response.status === 409) {
-        console.warn("Post already liked:", data);
-        setLiked(true); // Optional, still show UI as liked
-      } else {
-        console.error("Like failed:", data);
+      const data = await response.json();
+
+      if (response.status === 200) {
+        const updatedPostRes = await fetch(`${apiUrl}/posts/${post_id}`);
+      const updatedPost = await updatedPostRes.json();
+
+        if (updatedPostRes.ok && updatedPost.like_count !== undefined) {
+          setLikeCount(updatedPost.like_count);
+        }
+      else {
+        console.error("Failed to update like:", data);
       }
+        console.log("Post unliked successfully:", data);
+        localStorage.removeItem(`liked-${post_id}`);
+        if (typeof removeFromLikedPosts === 'function') {
+          removeFromLikedPosts(post_id);
+        }
+      } else {
+        console.error("Unlike failed:", data);
+      }
+    }
     } catch (error) {
       console.error("Error while liking post:", error);
     }
@@ -112,7 +271,7 @@ export default function MealPlanCard({ meal, patientInfo}) {
 const commentInputRef = useRef(null);
 const handleCommentIcon = () => {
   handleOpenModal(); // Make sure to call the function (add parentheses)
-
+  
   // Focus after a short delay to ensure modal has rendered
   setTimeout(() => {
     if (commentInputRef.current) {
@@ -120,18 +279,95 @@ const handleCommentIcon = () => {
     }
   }, 100);
 };
+useEffect(() => {
+  const checkIfSaved = async () => {
+    const post_id = meal?.post_id;
+    const user_id = patientInfo?.patient_id;
 
-  const handleAddToMealPlan = () =>{
-    setAdded(!added);
+    if (!post_id || !user_id) return;
 
+    try {
+      const response = await fetch(`${apiUrl}/posts/is-saved`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ post_id, user_id })
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        setAdded(data.is_saved);
+      } else {
+        console.error("Failed to check saved state:", data);
+      }
+    } catch (error) {
+      console.error("Error checking saved state:", error);
+    }
   };
-  const handleExpand = () => {
-    setExpanded(!expanded);
-  };
+
+  checkIfSaved();
+}, [meal?.post_id, patientInfo?.patient_id]);
+
+const handleAddToMealPlan = async () => {
+  const post_id = meal?.post_id;
+  const user_id = patientInfo?.user_id;
+
+  if (!post_id || !user_id) {
+    console.error("Missing post_id or user_id");
+    return;
+  }
+
+  try {
+    if (!added) {
+      // Save the meal
+      const response = await fetch(`${apiUrl}/posts/save`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ post_id, user_id })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setAdded(true);
+        console.log("Meal saved:", data);
+      } else {
+        console.error("Failed to save meal:", data);
+      }
+    } else {
+      // Unsaving logic (DELETE request — you need a backend endpoint for this)
+      const response = await fetch(`${apiUrl}/posts/unsave`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ post_id, user_id })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setAdded(false);
+        console.log("Meal unsaved:", data);
+      } else {
+        console.error("Failed to unsave meal:", data);
+      }
+    }
+  } catch (error) {
+    console.error("Error while toggling saved state:", error);
+  }
+};
+
 
   //Modal to View Full Reciepe
 const [openModal, setOpenModal] = useState(false);
-const handleOpenModal = () => setOpenModal(true);
+const handleOpenModal = () => {
+  setOpenModal(true);
+  handleExpandClick();
+};
 const handleCloseModal = () => setOpenModal(false);
 
   return (
@@ -142,7 +378,7 @@ const handleCloseModal = () => setOpenModal(false);
       
       <CardContent>
       <div style={{ marginBottom: 8 }}>
-      <Typography sx={{ fontFamily: 'Montserrat', fontWeight: 600, cursor:'pointer' }} onClick={handleOpenModal}>{title}</Typography>
+      <Typography sx={{ fontFamily: 'Montserrat', fontWeight: 600, cursor:'pointer' }} onClick={handleOpenModal} >{title}</Typography>
       <Box mt={1} display="flex" alignItems="center" gap={1}>
 
     {tags.map(tag => (
@@ -189,7 +425,7 @@ const handleCloseModal = () => setOpenModal(false);
   <IconButton onClick={handleLike}>
     {liked ? <FavoriteIcon color="error" /> : <FavoriteBorderIcon />}
   </IconButton>
-  {likes > 0 && (
+  
     <Typography
       variant="caption"
       sx={{
@@ -202,9 +438,9 @@ const handleCloseModal = () => setOpenModal(false);
         padding: '0 4px',
       }}
     >
-      {likes}
+      {likeCount}
     </Typography>
-  )}
+  
 </Box>
 
 <Box position="relative" display="inline-flex">
@@ -212,7 +448,7 @@ const handleCloseModal = () => setOpenModal(false);
   <IconButton onClick={handleCommentIcon}>
     <ChatBubbleOutline />
   </IconButton>
-  {comments.length > 0 && (
+  
     <Typography
       variant="caption"
       sx={{
@@ -224,9 +460,9 @@ const handleCloseModal = () => setOpenModal(false);
         px: 0.5,
       }}
     >
-      {comments.length}
+      {commentCount}
     </Typography>
-  )}
+  
 </Box>
         </Box>
 
@@ -300,7 +536,6 @@ const handleCloseModal = () => setOpenModal(false);
   <IconButton onClick={handleLike}>
     {liked ? <FavoriteIcon color="error" /> : <FavoriteBorderIcon />}
   </IconButton>
-  {likes > 0 && (
     <Typography
       variant="caption"
       sx={{
@@ -313,15 +548,14 @@ const handleCloseModal = () => setOpenModal(false);
         padding: '0 4px',
       }}
     >
-      {likes}
+      {likeCount}
     </Typography>
-  )}
+ 
 </Box>
 <Box position="relative" display="inline-flex">
   <IconButton onClick={handleExpandClick}>
     <ChatBubbleOutline />
   </IconButton>
-  {comments.length > 0 && (
     <Typography
       variant="caption"
       sx={{
@@ -333,9 +567,9 @@ const handleCloseModal = () => setOpenModal(false);
         px: 0.5,
       }}
     >
-      {comments.length}
+      {commentCount}
     </Typography>
-  )}
+  
 </Box>
         </Box>
       </Box>
@@ -353,9 +587,9 @@ const handleCloseModal = () => setOpenModal(false);
           gap: 1,
         }}
       >
-{comments.map((comment, index) => (
+{comments.map((comment) => (
   <Box
-    key={index}
+    key={comment.comment_id}
     sx={{
       backgroundColor: '#f5f5f5',
       p: 1,
@@ -367,7 +601,7 @@ const handleCloseModal = () => setOpenModal(false);
     <Typography  sx={{ fontWeight: 'bold', pr:'1vh' }}>
       {comment.firstName} {comment.lastName}
     </Typography>
-    <Typography >{comment.text}</Typography>
+    <Typography >{comment.text || comment.comment_text}</Typography>
   </Box>
 ))}
 

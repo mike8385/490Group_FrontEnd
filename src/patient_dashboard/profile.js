@@ -50,30 +50,16 @@ useEffect(() => {
       console.error("Error fetching patient info:", error);
     }
   };
-
   fetchPatientInfo();
 }, []);
 const [posts, setPosts] = useState([]);
+useEffect(() => {
+  if (patientInfo && changeTab === 0) {
+    fetchUserPosts(patientInfo.user_id);
+  }
+}, [changeTab, patientInfo]);
 
-  useEffect(() => {
-    fetch(`${apiUrl}/posts`) // Update if your API base URL is different
-      .then(res => res.json())
-      .then(data => {
-        const formattedPosts = data.map(post => ({
-          post_id: post.post_id,
-          author: `${post.first_name} ${post.last_name}`,
-          title: post.meal_name,
-          tags: [`#${post.tag}`],
-          description: post.description,
-          image: `data:image/jpeg;base64,${post.picture}`, // Assuming JPEG, adjust if needed
-          comments: [], // You can add comment logic here if you have a comments endpoint
-        }));
-        setPosts(formattedPosts);
-      })
-      .catch(error => {
-        console.error("Error fetching posts:", error);
-      });
-  }, []);
+
 const [patientInitSurvey, setPatientInitSurvey] = useState(null);
 useEffect(() => {
   const fetchInitialSurvey = async () => {
@@ -99,12 +85,13 @@ useEffect(() => {
 const [likedPosts, setLikedPosts] = useState([]);
 
 useEffect(() => {
-  const fetchLikedPosts = async () => {
-    const patientId = localStorage.getItem("patientId");
-    if (!patientId) {
-      console.warn("No patient ID found in localStorage");
-      return;
-    }
+  if (changeTab === 1) {
+    const fetchLikedPosts = async () => {
+      const patientId = localStorage.getItem("patientId");
+      if (!patientId) {
+        console.warn("No patient ID found in localStorage");
+        return;
+      }
 
     try {
       const response = await fetch(`${apiUrl}/posts/liked?patient_id=${patientId}`);
@@ -113,12 +100,15 @@ useEffect(() => {
       if (data.liked_posts) {
         const postDetails = await Promise.all(
           data.liked_posts.map(async (liked) => {
-            const res = await fetch(`${apiUrl}/posts/liked?patient_id=${liked.post_id}`);
+            const res = await fetch(`${apiUrl}/posts/${liked.post_id}`);
             return res.json();
           })
         );
 
         const formattedPosts = postDetails.map(post => ({
+          like_count: post.like_count,
+          comment_count:post.comment_count,
+          post_id: post.post_id,
           author: `${post.first_name} ${post.last_name}`,
           title: post.meal_name,
           tags: [`#${post.tag}`],
@@ -135,11 +125,34 @@ useEffect(() => {
   };
 
   fetchLikedPosts();
-}, []);
-
+}
+}, [changeTab]);
+const handleRemoveLikedPost = (postIdToRemove) => {
+  setLikedPosts(prevPosts => prevPosts.filter(post => post.post_id !== postIdToRemove));
+};
 const [openAboutMe, setOpenAboutMe] = useState(false);
 const handleOpenAboutMe = () => setOpenAboutMe(true);
 const handleCloseAboutMe = () => setOpenAboutMe(false);
+const fetchUserPosts = async (user_id) => {
+  try {
+    const res = await fetch(`${apiUrl}/posts/user/${user_id}`);
+    const data = await res.json();
+    const formattedPosts = data.map(post => ({
+      like_count: post.like_count,
+      comment_count: post.comment_count,
+      post_id: post.post_id,
+      author: `${post.first_name} ${post.last_name}`,
+      title: post.meal_name,
+      tags: [`#${post.tag}`],
+      description: post.description,
+      image: `data:image/jpeg;base64,${post.picture}`,
+    }));
+    setPosts(formattedPosts);
+  } catch (error) {
+    console.error("Error fetching posts:", error);
+  }
+};
+
   return (
     <Box display="flex">
       <Navbar />
@@ -220,7 +233,8 @@ const handleCloseAboutMe = () => setOpenAboutMe(false);
     <MealCard
       meal={post}
       patientInfo={{
-        patient_id: patientInfo.patient_id, //  corrected key
+        user_id:patientInfo.user_id,
+        patient_id: patientInfo.patient_id, 
         firstName: patientInfo.first_name,
         lastName: patientInfo.last_name,
       }}
@@ -364,9 +378,12 @@ const handleCloseAboutMe = () => setOpenAboutMe(false);
           <MealCard
             meal={post}
             patientInfo={{
+              user_id:patientInfo.user_id,
+              patient_id: patientInfo.patient_id,
               firstName: patientInfo.first_name,
               lastName: patientInfo.last_name,
             }}
+            removeFromLikedPosts={handleRemoveLikedPost}
           />
         </Grid>
       ))

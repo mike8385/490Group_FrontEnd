@@ -99,7 +99,7 @@ function Patient_Landing() {
     if (!appointmentToCancel) return;
 
     try {
-      const response = await fetch(`/cancel-appointment/${appointmentToCancel}`, {
+      const response = await fetch(`${apiUrl}/cancel-appointment/${appointmentToCancel}`, {
         method: 'DELETE',
       });
 
@@ -207,7 +207,7 @@ function Patient_Landing() {
   useEffect(() => {
     const fetchAppointmentStatus = async () => {
       try {
-        const res = await fetch(`/appointments/${patientId}`);
+        const res = await fetch(`${apiUrl}/appointments/${patientId}`);
         const appointments = await res.json();
         const status = appointments.accepted;
         console.log("AppointmentStatus:", status);
@@ -419,7 +419,7 @@ function Patient_Landing() {
 
       try {
         // Daily survey check
-        const dailyRes = await fetch(`/daily-surveys/${patientId}`);
+        const dailyRes = await fetch(`${apiUrl}/daily-surveys/${patientId}`);
         const dailyData = await dailyRes.json();
 
         const hasDailyToday = dailyData.some(survey => {
@@ -434,7 +434,7 @@ function Patient_Landing() {
         setDailySubmitted(hasDailyToday);
 
         // Weekly survey check
-        const weeklyRes = await fetch(`/weekly-surveys/${patientId}`);
+        const weeklyRes = await fetch(`${apiUrl}/weekly-surveys/${patientId}`);
         const weeklyData = await weeklyRes.json();
 
         const hasWeeklyThisWeek = weeklyData.some(survey => {
@@ -710,7 +710,7 @@ function Patient_Landing() {
     if (!appointmentId) return;
 
     try {
-      const response = await fetch('/appointment/rate', {
+      const response = await fetch(`${apiUrl}/appointment/rate`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -749,7 +749,7 @@ function Patient_Landing() {
 
       const checkRatingStatus = async () => {
         try {
-          const response = await fetch(`/appointment/status/${appointmentId}`);
+          const response = await fetch(`${apiUrl}/appointment/status/${appointmentId}`);
           if (response.ok) {
             const data = await response.json();
             if (data?.appt_rating) {

@@ -777,3 +777,12 @@ th, td {
   
 
 
+
+/* Add this to your CSS */
+.patienttest{
+  justify-content: flex-end; /* This will push content to the right */
+}
+
+.patienttest .basic-info {
+  width: 50%; /* Adjust this to match the width of your other info sections */
+}

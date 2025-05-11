@@ -590,7 +590,7 @@ function Doctorsignup() {
                   </label>
                 </div>        
                 <div className='labels'> 
-                  <label className='terms' onClick={handleOpen}>Do you Accept the terms and conditions? 
+                  <label className='input-group' onClick={handleOpen}>Do you Accept the terms and conditions? 
                     <Checkbox checked={termsAccepted} onChange={(e) => setTermsAccepted(e.target.checked)} required />
                   </label>
                   <Modal
