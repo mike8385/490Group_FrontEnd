@@ -111,8 +111,8 @@ function Doctor_Landing() {
   useEffect(() => {
     const fetchAppointments = async () => {
       try {
-        const upcomingRes = await fetch(`/doc-upcoming/${doctorId}`);
-        const pastRes = await fetch(`/doc-past/${doctorId}`);
+        const upcomingRes = await fetch(`${apiUrl}/doc-upcoming/${doctorId}`);
+        const pastRes = await fetch(`${apiUrl}/doc-past/${doctorId}`);
 
         if (!upcomingRes.ok || !pastRes.ok) {
           throw new Error("Failed to fetch appointments");
@@ -531,7 +531,7 @@ function Doctor_Landing() {
   useEffect(() => {
     const fetchRequestedAppointments = async () => {
       try {
-        const response = await fetch(`/requested-appointments/${doctorId}`);
+        const response = await fetch(`${apiUrl}/requested-appointments/${doctorId}`);
         if (!response.ok) {
           throw new Error("Failed to fetch appointments");
         }
@@ -551,7 +551,7 @@ function Doctor_Landing() {
 
   const handleUpdateStatus = async (appointmentId, newStatus) => {
     try {
-      const response = await fetch(`/doc-appointments-status/${appointmentId}`, {
+      const response = await fetch(`${apiUrl}/doc-appointments-status/${appointmentId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -567,7 +567,7 @@ function Doctor_Landing() {
         prev.filter((appt) => appt.patient_appt_id !== appointmentId)
       );
       if (newStatus === 1) {
-        const updatedRes = await fetch(`/doc-upcoming/${doctorId}`);
+        const updatedRes = await fetch(`${apiUrl}/doc-upcoming/${doctorId}`);
         if (!updatedRes.ok) throw new Error("Failed to fetch updated upcoming appointments");
         const updatedUpcoming = await updatedRes.json();
         setUpcomingAppointments(updatedUpcoming);
