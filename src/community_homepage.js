@@ -98,17 +98,32 @@ const [selectedCategory, setSelectedCategory] = useState("All");
       });
   }, []);
   useEffect(() => {
-    const query = searchQuery.toLowerCase();
-    const category = selectedCategory;
-  
-    const results = posts.filter(post => {
-      const matchesTitle = post.title.toLowerCase().includes(query);
-      const matchesCategory = category === "All" || post.tags.some(tag => tag.toLowerCase().includes(category.toLowerCase()));
-      return matchesTitle && matchesCategory;
-    });
-  
-    setFilteredPosts(results);
-  }, [searchQuery, selectedCategory, posts]);
+  const query = searchQuery.toLowerCase();
+
+  const results = posts.filter(post => {
+    if (selectedCategory === "Title") {
+      return post.title.toLowerCase().includes(query);
+    }
+
+    if (selectedCategory === "Tags") {
+      return post.tags.some(tag => tag.toLowerCase().includes(query));
+    }
+
+    if (selectedCategory === "User") {
+      return post.author.toLowerCase().includes(query);
+    }
+
+    // If "All" is selected or default
+    return (
+      post.title.toLowerCase().includes(query) ||
+      post.author.toLowerCase().includes(query) ||
+      post.tags.some(tag => tag.toLowerCase().includes(query))
+    );
+  });
+
+  setFilteredPosts(results);
+}, [searchQuery, selectedCategory, posts]);
+
 
 
     //pagination
@@ -164,9 +179,9 @@ const paginatedPosts = displayedPosts.slice(
   }}
 >
   <MenuItem value="All">Categories</MenuItem>
-  <MenuItem value="Keto">Keto</MenuItem>
-  <MenuItem value="Vegan">Vegan</MenuItem>
-  <MenuItem value="Paleo">Paleo</MenuItem>
+  <MenuItem value="Title">Title</MenuItem>
+  <MenuItem value="Tags">Tag</MenuItem>
+  <MenuItem value="User">User</MenuItem>
 </TextField>
 
 

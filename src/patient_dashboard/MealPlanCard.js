@@ -158,6 +158,7 @@ useEffect(() => {
       });
 
       const data = await response.json();
+      console.log("isliked", data.is_liked)
       if (response.ok) {
         setLiked(data.is_liked);
       } else {
@@ -282,10 +283,12 @@ const handleCommentIcon = () => {
 useEffect(() => {
   const checkIfSaved = async () => {
     const post_id = meal?.post_id;
-    const user_id = patientInfo?.patient_id;
+    const user_id = patientInfo?.user_id;
 
-    if (!post_id || !user_id) return;
-
+    if (!post_id || !user_id) {
+      setAdded(false); // Reset if no valid info
+      return;
+    }
     try {
       const response = await fetch(`${apiUrl}/posts/is-saved`, {
         method: 'POST',
@@ -296,6 +299,7 @@ useEffect(() => {
       });
 
       const data = await response.json();
+      const val = data.is_saved;
       if (response.ok) {
         setAdded(data.is_saved);
       } else {
@@ -307,7 +311,7 @@ useEffect(() => {
   };
 
   checkIfSaved();
-}, [meal?.post_id, patientInfo?.patient_id]);
+}, [meal?.post_id, patientInfo?.user_id]);
 
 const handleAddToMealPlan = async () => {
   const post_id = meal?.post_id;
