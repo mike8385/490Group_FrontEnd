@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
 import Navbar from "./patient_navbar";
-import { Checkbox, FormControlLabel,FormLabel, FormGroup, Box, Typography, IconButton, Avatar, Modal, TextField,Button,Grid } from "@mui/material";
 import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
 import GridOnIcon from '@mui/icons-material/GridOn';
 import AddIcon from '@mui/icons-material/Add';
@@ -10,10 +9,13 @@ import profileBackground from "./profile_assets/profile_background.png"
 import ProfileImg from "./profile_assets/profilePageImg.png"
 import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
+import { Radio, RadioGroup, Typography,Grid,Button,Box,TextField,FormControlLabel,Modal, IconButton, FormLabel, Avatar } from '@mui/material';
+
 const apiUrl = process.env.REACT_APP_API_URL;
 
-
-const Profile = () => {
+  const Profile = () => {
+  const [selectedTag, setSelectedTag] = useState('');
+const [customTag, setCustomTag] = useState('');
   const [openCreatePost, setOpenCreatePost] = React.useState(false);
 
 const handleOpenCreatePost = () => setOpenCreatePost(true);
@@ -21,11 +23,15 @@ const handleCloseCreatePost = () => setOpenCreatePost(false);
 
 
 const [uploadedFileName, setUploadedFileName] = React.useState('');
-
 const [patientInfo, setPatientInfo] = useState(null);
+//Add post useStates
+const [title, setTitle] = useState('');
+const [calories, setCalories] = useState('');
+const [description, setDescription] = useState('');
+const [imageBase64, setImageBase64] = useState('');
 
 const [changeTab, setChangeTab] = React.useState(0);
-const handleChange = (event: React.SyntheticEvent, newValue: number) => {
+const handleChange = (event, newValue) => {
   setChangeTab(newValue);
 };
 
@@ -153,6 +159,55 @@ const fetchUserPosts = async (user_id) => {
   }
 };
 
+//add new post handling
+const handleCreatePost = async () => {
+  const user_id = patientInfo?.user_id;
+  const meal_name = title;
+  const meal_calories = parseInt(calories);
+  const tagToSubmit = selectedTag === "Other" ? customTag : selectedTag;
+
+  if (!user_id || !meal_name || !description || !imageBase64 || !tagToSubmit) {
+    alert("Please fill out all fields.");
+    return;
+  }
+
+  try {
+    const res = await fetch(`${apiUrl}/add-post`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        user_id,
+        meal_name,
+        meal_calories,
+        description,
+        picture: imageBase64,
+        add_tag: tagToSubmit
+      })
+    });
+    console.log('userId',user_id);
+    if (!res.ok) throw new Error("Failed to create post");
+
+    const data = await res.json();
+    console.log("Post created:", data);
+    alert("Post successfully created!");
+
+    // Optional: Reset form
+    setTitle('');
+    setCalories('');
+    setDescription('');
+    setSelectedTag('');
+    setCustomTag('');
+    setUploadedFileName('');
+    setImageBase64('');
+    handleCloseCreatePost();
+    fetchUserPosts(user_id); // Refresh user's posts
+  } catch (error) {
+    console.error("Error creating post:", error);
+    alert("There was a problem creating the post.");
+  }
+};
+
+
   return (
     <Box display="flex">
       <Navbar />
@@ -267,20 +322,25 @@ const fetchUserPosts = async (user_id) => {
               <AddIcon sx={{ fontSize: 40 }} />
             </Box>
           </Grid>
-          <Modal open={openCreatePost} onClose={handleCloseCreatePost}>
-  <Box
-    sx={{
-      position: 'absolute',
-      top: '50%',
-      left: '50%',
-      transform: 'translate(-50%, -50%)',
-      width: "65vh",
-      bgcolor: '#F5F7FF',
-      borderRadius: '15px',
-      boxShadow: 24,
-      overflow: 'hidden', // so the header is connected
-    }}
-  >
+
+
+        </Grid></>
+        
+      )}
+        <Modal open={openCreatePost} onClose={handleCloseCreatePost}>
+    <Box
+      sx={{
+        position: 'absolute',
+        top: '50%',
+        left: '50%',
+        transform: 'translate(-50%, -50%)',
+        width: "65vh",
+        bgcolor: '#F5F7FF',
+        borderRadius: '15px',
+        boxShadow: 24,
+        overflow: 'hidden', // so the header is connected
+      }}
+    >
     {/* Header */}
     <Box sx={{ bgcolor: '#5E4B8B', p:'.5vh', display: 'flex', alignItems: 'center' }}>
       <Typography sx={{flexGrow:'1',textAlign:"center", color: 'white', fontWeight: 'bold', fontFamily: 'Montserrat' }}>
@@ -301,16 +361,28 @@ const fetchUserPosts = async (user_id) => {
     sx={{ bgcolor: '#A0B9DA', width: '29%' ,textAlign:'center'}}
   >
     Upload Image File
-    <input 
-      hidden 
-      accept="image/*" 
-      type="file" 
-      onChange={(e) => {
-        if (e.target.files.length > 0) {
-          setUploadedFileName(e.target.files[0].name);
+<input 
+  hidden 
+  accept="image/*" 
+  type="file" 
+  onChange={(e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setUploadedFileName(file.name);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const result = reader.result;
+        if (typeof result === "string" && result.includes(',')) {
+          setImageBase64(result.split(',')[1]); // safe base64 split
+        } else {
+          console.warn("Unexpected file format for base64 image.");
         }
-      }}
-    />
+      };
+      reader.readAsDataURL(file);
+    }
+  }}
+/>
+
   </Button>
 
   {/* File name shown to the right of button */}
@@ -324,20 +396,44 @@ const fetchUserPosts = async (user_id) => {
 
 <Box display={"flex"}> 
 <Typography sx={{ color: 'white',  fontFamily: 'Montserrat', bgcolor: '#A0B9DA', width: '44%' ,textAlign:'center', height:'6.7vh', borderRadius:'.5vh' }}>
-        Create Post
+      Title
 </Typography>    
-  <TextField fullWidth label="Title" variant="outlined" sx={{ml:2, mb: 2 }} />
+  <TextField fullWidth label="Title" variant="outlined" value={title} onChange={(e) => setTitle(e.target.value)} sx={{ml:2, mb: 2 }} />
 </Box>
 
 
-<Box sx={{ mb: 2 , display:'flex'}}>
-  <FormLabel component="legend" sx={{mr:'2vh',color: 'white',  fontFamily: 'Montserrat', bgcolor: '#A0B9DA', width: '35%' ,textAlign:'center', height:'6.7vh', borderRadius:'.5vh' }}>Hashtags</FormLabel>
-  <FormGroup row> {/* row makes them horizontal! */}
-    <FormControlLabel control={<Checkbox />} label="Keto" />
-    <FormControlLabel control={<Checkbox />} label="Vegan" />
-    <FormControlLabel control={<Checkbox />} label="Paleo" />
-    <FormControlLabel control={<Checkbox />} label="Low-Carbs" />
-  </FormGroup>
+<Box sx={{mt:'2vh', mb: 2 , display:'flex'}}>
+  <FormLabel component="legend" sx={{mr:'2vh',color: 'white',  fontFamily: 'Montserrat', bgcolor: '#A0B9DA', width: '30%' ,textAlign:'center', height:'6.7vh', borderRadius:'.5vh' }}>Hashtags</FormLabel>
+<RadioGroup
+  column
+  value={selectedTag}
+  onChange={(e) => setSelectedTag(e.target.value)}
+>
+  <FormControlLabel value="Keto" control={<Radio />} label="#Keto" />
+  <FormControlLabel value="Vegan" control={<Radio />} label="#Vegan" />
+  <FormControlLabel value="Paleo" control={<Radio />} label="#Paleo" />
+  <FormControlLabel value="Low-Carbs" control={<Radio />} label="#Low-Carbs" />
+  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+    <FormControlLabel value="Other" control={<Radio />} label="Other" />
+    {selectedTag === "Other" && (
+      <TextField
+        size="small"
+        label="Other"
+        //variant="outlined"
+        value={customTag}
+        onChange={(e) => setCustomTag(e.target.value)}
+      />
+    )}
+  </Box>
+</RadioGroup>
+
+</Box>
+<Box sx={{mb:'2vh'}}display={"flex"}> 
+<Typography sx={{ color: 'white',  fontFamily: 'Montserrat', bgcolor: '#A0B9DA', width: '44%' ,textAlign:'center', height:'6.7vh', borderRadius:'.5vh' }}>
+        Calories
+</Typography>    
+  <TextField fullWidth label="Number of calories" variant="outlined" value={calories}   onChange={(e) => setCalories(e.target.value)}
+ sx={{ml:2, mb: 2 }} />
 </Box>
 <Box display={'flex'}>
 <Typography sx={{ color: 'white',  fontFamily: 'Montserrat', bgcolor: '#A0B9DA', width: '45%' ,textAlign:'center', height:'6.7vh', borderRadius:'.5vh' }}>
@@ -349,12 +445,15 @@ const fetchUserPosts = async (user_id) => {
         multiline
         rows={8}
         variant="outlined"
+        value={description}
+        onChange={(e) => setDescription(e.target.value)}
         sx={{ ml: '2vh' , mb:'2vh'}}
       />
 </Box>
       <Button
         fullWidth
         variant="contained"
+        onClick={handleCreatePost}
         sx={{
           bgcolor: '#A0B9DA',
           '&:hover': { bgcolor: '#8CAACF' },
@@ -367,9 +466,6 @@ const fetchUserPosts = async (user_id) => {
     </Box>
   </Box>
 </Modal>
-
-        </Grid></>
-      )}
 {changeTab === 1 && (
   <Grid container spacing={3}>
     {likedPosts.length > 0 ? (

@@ -90,7 +90,13 @@ function Patient_Mealplan() {
         console.warn("No patient ID in localStorage");
         return;
       }
-    
+      console.log("Successfully got ID", id);
+      const Uid = localStorage.getItem("userId");
+      if (!Uid) {
+        console.warn("No user ID in localStorage");
+        return;
+      }
+      console.log("Successfully got UID", Uid);
       try {
         const response = await fetch(`${apiUrl}/saved-meal-plans/${id}`);
         
@@ -122,8 +128,6 @@ function Patient_Mealplan() {
   }, []);
   
 
-  // const [mealPlans, setMealPlans] = useState([]);
-
   // useEffect(() => {
   //   fetch('http://127.0.0.1:5000/doctors')
   //     .then(response => response.json())
@@ -134,32 +138,71 @@ function Patient_Mealplan() {
   //       console.error("Error fetching doctor data:", error);
   //     });
   // }, [])
-  const savedMeals = [
-    {
-      title: "Cauliflower Fried Rice",
-      tags: "Keto",
-      description: "Fried rice is a classic and comforting recipe that everyone loves...",
-      image: "https://via.placeholder.com/80", // Replace with actual image URLs later
-    },
-    {
-      title: "Cheesy Broccoli Cheddar Spaghetti Squash",
-      tags: "Keto",
-      description: "Cheesy broccoli in any form is our ultimate comfort food...",
-      image: "https://via.placeholder.com/80",
-    },
-    {
-      title: "Cheesy Bacon Ranch Chicken",
-      tags: "Keto",
-      description: "Bacon and ranch is an absolute match made in heaven...",
-      image: "https://via.placeholder.com/80",
-    },
-    {
-        title: "Cheesy Bacon Ranch Chicken",
-        tags: "Keto",
-        description: "Bacon and ranch is an absolute match made in heaven...",
-        image: "https://via.placeholder.com/80",
-      },
-  ];
+
+    const [savedMeals, setSavedMeals] = useState([]);
+  
+      useEffect(() => {
+      const fetchSavedMeals = async () => {
+      const Uid = localStorage.getItem("userId");
+      if (!Uid) {
+        console.warn("No user ID in localStorage");
+        return;
+      }
+        try {
+          const res = await fetch(`${apiUrl}/posts/save/${Uid}`);
+          if (!res.ok) {
+            throw new Error("Failed to fetch user info");
+          }
+          const  saved_meals  = await res.json();
+
+          if (!saved_meals) {
+          throw new Error('No meal data received');
+        }
+
+        setSavedMeals(
+        saved_meals.map(meal => ({
+          title: meal.meal_name || "Custom",
+          tags: meal.tag || "Custom", // Use creator_name from backend
+          description: meal.description || "Custom",
+          image: meal.picture || food1 // fallback to default image
+
+          
+        }))
+      );
+      } catch (error) {
+        console.error("Failed to fetch meal plans:", error);
+      }
+    };
+      fetchSavedMeals();
+    }, []);
+  // const savedMeals = [
+  //   {
+  //     title: "Cauliflower Fried Rice",
+  //     tags: "Keto",
+  //     description: "Fried rice is a classic and comforting recipe that everyone loves...",
+  //     image: "https://via.placeholder.com/80", // Replace with actual image URLs later
+  //   },
+  //   {
+  //     title: "Cheesy Broccoli Cheddar Spaghetti Squash",
+  //     tags: "Keto",
+  //     description: "Cheesy broccoli in any form is our ultimate comfort food...",
+  //     image: "https://via.placeholder.com/80",
+  //   },
+  //   {
+  //     title: "Cheesy Bacon Ranch Chicken",
+  //     tags: "Keto",
+  //     description: "Bacon and ranch is an absolute match made in heaven...",
+  //     image: "https://via.placeholder.com/80",
+  //   },
+  //   {
+  //       title: "Cheesy Bacon Ranch Chicken",
+  //       tags: "Keto",
+  //       description: "Bacon and ranch is an absolute match made in heaven...",
+  //       image: "https://via.placeholder.com/80",
+  //     },
+  // ];
+
+  
 
   const [openModal, setOpenModal] = useState(false);
 

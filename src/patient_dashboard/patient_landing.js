@@ -121,6 +121,7 @@ function Patient_Landing() {
 
   const [patientInfo, setPatientInfo] = useState(null);
 
+
   useEffect(() => {
     const fetchPatientInfo = async () => {
       const id = localStorage.getItem("patientId");
@@ -144,6 +145,32 @@ function Patient_Landing() {
     };
 
     fetchPatientInfo();
+  }, []);
+
+
+  const [userInfo, setUserInfo] = useState(null);
+
+    useEffect(() => {
+    const fetchUserInfo = async () => {
+      const id = localStorage.getItem("patientId");
+      if (!id) {
+        console.warn("No patient ID in localStorage");
+        return;
+      }
+      try {
+        const res = await fetch(`${apiUrl}/user?patient_id=${id}`);
+        if (!res.ok) {
+          throw new Error("Failed to fetch user info");
+        }
+        const data = await res.json();
+        setUserInfo(data);
+        console.log("User ID", data);
+        localStorage.setItem("userId", data.user_id);
+      } catch (error) {
+        console.error("Error fetching user info:", error);
+      }
+    };
+    fetchUserInfo();
   }, []);
 
   const [value, setValue] = React.useState(2);
@@ -1328,7 +1355,7 @@ function Patient_Landing() {
                           boxShadow: 3,
                         }}
                       >
-                        <Typography sx={{ fontFamily: 'Montserrat', textAlign: 'center', fontSize: '2vh', mb: 2 }}>
+                        <Typography sx={{ fontFamily: 'Montserrat', textAlign: 'center', fontSize: '2vh', mb: 2, color: 'black' }}>
                           Looks like you don’t have any data. Come back after filling out the surveys.
                         </Typography>
                         <Box
