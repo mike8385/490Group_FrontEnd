@@ -14,8 +14,6 @@ import {
   Divider
 } from '@mui/material';
 import Pagination from '@mui/material/Pagination';
-import Snackbar from '@mui/material/Snackbar';
-import MuiAlert from '@mui/material/Alert';
 
 import MealCardPatient from "./patient_dashboard/MealPlanCard"; // Make sure MealCardPatient is exported from mealPlanCard.js
 import MealCardDoctor from "./doctor_dashboard/MealPlanCard";

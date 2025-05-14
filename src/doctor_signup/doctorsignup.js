@@ -89,8 +89,13 @@ const handleFileUpload = (e) => {
   reader.onloadend = () => {
     const result = reader.result;
     // Extract just the base64 portion
-    const base64Data = result.split(',')[1];
-    setValues({...values, doctor_picture: base64Data});
+    if (typeof result === "string" && result.includes(',')) {
+    const base64Only = result.split(',')[1]; 
+    console.log('imageulr', base64Only)
+    setImageBase64(base64Only);
+  } else {
+    console.warn("Unexpected file format for base64 image.");
+  }
   };
   reader.readAsDataURL(file);
 };
@@ -241,7 +246,7 @@ const handleFileUpload = (e) => {
       zipcode: values.zip,
       city: values.city,
       state: values.state,
-      doctor_picture: values.doctor_picture || defaultAvatar
+      doctor_picture: imageBase64 || defaultAvatar
     };
     
     fetch(`${apiUrl}/register-doctor`, {

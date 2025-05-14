@@ -1648,11 +1648,11 @@ const handleCreateAppointment = async () => {
                           <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
                             <Box
                               component="img"
-                              src={doc1}
+                              src={doctorInfo.doctor_picture || doc1}                   
                               alt="Doctor"
                               sx={{
-                                maxHeight: '20vh',
-                                width: '20vw',
+                                height: '20vh',
+                                width: '13vw',
                                 borderRadius: "30px",
                                 objectFit: "cover",
                                 mr: 2,

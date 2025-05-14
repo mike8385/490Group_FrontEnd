@@ -87,7 +87,7 @@ function Patient_Doctorlist() {
   const [selectedDoctor, setSelectedDoctor] = useState(null);
 
   const [openAdd, setOpenAdd] = useState(false);
-
+  
   const openAddModal = () => {
     setOpenAdd(true);
   };
@@ -184,10 +184,10 @@ function Patient_Doctorlist() {
                   marginRight: '.5vw'
                 }}
               >
+               
                 <Box sx={{ display: "flex", alignItems: "center" }}>
                   <Avatar
-                    src={doc1}
-                    sx={{
+                src={doc.doctor_picture || doc1}                    sx={{
                       width: '18vh',
                       height: '18vh',
                       marginRight: 2,
@@ -299,7 +299,7 @@ function Patient_Doctorlist() {
                     <Box sx={{ display: 'flex', flexDirection: 'row' }}>
                       <Box
                         component="img"
-                        src={doc1}
+                        src={selectedDoctor.doctor_picture}
                         alt="Doctor"
                         sx={{
                           maxHeight: '20vh',
