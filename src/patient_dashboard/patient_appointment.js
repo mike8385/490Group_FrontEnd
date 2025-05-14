@@ -82,6 +82,9 @@ function Patient_Appointment() {
   const [userId, setUserId] = useState(null);
   const messagesEndRef = useRef(null);
 
+  const [appointmentStatus, setAppointmentStatus] = useState(null);
+
+
   useEffect(() => {
       if (messagesEndRef.current) {
         messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
@@ -160,10 +163,15 @@ function Patient_Appointment() {
           notes: data.doctor_appointment_note || "Not available until after appointment",
           prescription: data.current_medications || "Not available until after appointment",
           mealPlan: data.meal_prescribed || "Not available until after appointment",
-          appointmentDate: new Date(data.appointment_datetime)
+          appointmentDate: new Date(data.appointment_datetime),
+          appt_status: data.appt_status
         };
 
         setAppointmentData(formattedData);
+        setAppointmentStatus(data.app_status); // Save app_status from API
+
+        // Only show input if app_status === 1
+        setShowInput(data.app_status === 1);
 
         // Check if the appointment is within 1 day
         const currentDate = new Date();
@@ -203,7 +211,7 @@ function Patient_Appointment() {
     fetchChat();
   }, [appointmentId]);
 
-
+  
   const handleSend = async () => {
     if (!newMessage.trim()) return;
   
@@ -232,6 +240,24 @@ function Patient_Appointment() {
   
     setNewMessage("");
   };
+  
+  useEffect(() => {
+  if (!appointmentId) return;
+
+  const intervalId = setInterval(async () => {
+    try {
+      const res = await fetch(`${apiUrl}/single_appointment/${appointmentId}`);
+      if (!res.ok) throw new Error("Failed to check appointment status");
+      const data = await res.json();
+      setAppointmentStatus(data.app_status);
+      setShowInput(data.app_status === 1);
+    } catch (error) {
+      console.error("Polling error:", error);
+    }
+  }, 5000);
+
+  return () => clearInterval(intervalId); // Clean up on unmount
+}, [appointmentId]);
   
   
   return (
