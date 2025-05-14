@@ -529,21 +529,20 @@ useEffect(() => {
 
       // 2. Save meal plan (if selected)
       if (selectedMealPlan) {
-        const doctorId = localStorage.getItem("doctor_id"); // or get from props/context
-        const patientId = localStorage.getItem("patient_id"); // optional if applicable
-
-        const mealRes = await fetch(`${apiUrl}/saved-meal-plans`, {
+        
+        const mealRes = await fetch(`${apiUrl}/appointment/meal`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             meal_plan_id: selectedMealPlan,
-            doctor_id: doctorId ? parseInt(doctorId) : null,
-            patient_id: patientId ? parseInt(patientId) : null,
+            appt_id: appointmentId,
           }),
         });
 
         const mealData = await mealRes.json();
         if (!mealRes.ok) {
+          console.log('mealplan', selectedMealPlan)
+          console.log('appointid', appointmentId)
           alert(mealData.error || "Failed to save meal plan.");
           return;
         }
