@@ -2,8 +2,8 @@ import React, { useState, useEffect } from "react";
 import "./landing.css";
 import heroImage from "./assets/heroimage.png";
 import patient1 from "./assets/patient1.png";
-import patient2 from "./assets/patient2.png";
-import patient3 from "./assets/patient3.png";
+import patient2 from "./assets/jenna.png";
+import patient3 from "./assets/cassie.png";
 
 import doctor1 from "./assets/doctor1.png";
 import doctor2 from "./assets/doctor2.png";
@@ -301,8 +301,8 @@ const stories = [
   {
     title: "Health Discipline",
     image: patient1,
-    short: `"Three years ago, I could barely walk up a flight of stairs without gasping for air. I was borderline diabetic, Read more..."`,
-    full: `"Three years ago, I could barely walk up a flight of stairs without gasping for air. I was borderline diabetic, severely overweight, and emotionally drained. I had tried every crash diet imaginable, from keto to juice cleanses, but nothing ever lasted. Then a friend told me about this clinic — how their doctors focused on sustainable meal plans tailored to your lifestyle. From the very first consultation, I felt heard. My nutritionist helped me replace shame with structure. They built me a custom plan that didn't just include what to eat, but when and why. Within six months, I had lost 40 pounds and had energy I hadn't felt in years. A year later, I ran my first 5K. I still follow the meal plan today — it's become second nature. I regained my health, my joy, and most importantly, my hope."`
+    short: `“I used to be heavily overweight and it sucked. Now after a few appointments I was able to get my life together. I even donated $100M”"`,
+    full: `"“I used to be heavily overweight and it sucked. Now after a few appointments I was able to get my life together. I even donated $100M”."`
   },
   {
     title: "Health to Wealth",

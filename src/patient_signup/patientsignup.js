@@ -15,12 +15,9 @@ import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import Snackbar from '@mui/material/Snackbar';
 import MuiAlert from '@mui/material/Alert';
+import defaultAvatar from "../patient_dashboard/doctorim/doctor1.png"; // Default avatar image
+
 const apiUrl = process.env.REACT_APP_API_URL;
-
-
-
-
-
 
 
 /*
@@ -70,12 +67,42 @@ function Patientsignup() {
     policy: '',
     exp: '',
     email: '',
-    password: ''
+    password: '',
+    profile_pic: ''
   })
 
   const navigate = useNavigate()
   const label = { inputProps: { 'aria-label': 'Checkbox demo' } };
-  
+
+  const [imageBase64, setImageBase64] = useState('');
+
+const handleFileUpload = (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  // Validate file type and size
+  if (!file.type.match('image.*')) {
+    showSnack('Please upload an image file (JPEG, PNG, etc.)');
+    return;
+  }
+
+  if (file.size > 2 * 1024 * 1024) {
+    showSnack('Image must be smaller than 2MB');
+    return;
+  }
+
+  setUploadedFileName(file.name);
+  const reader = new FileReader();
+  reader.onloadend = () => {
+    const result = reader.result;
+    // Extract just the base64 portion
+    const base64Data = result.split(',')[1];
+    setValues({...values, profile_pic: base64Data});
+  };
+  reader.readAsDataURL(file);
+};
+
+  const [uploadedFileName, setUploadedFileName] = React.useState('');
   const [open, setOpen] = React.useState(false);
   const handleOpen = () => setOpen(true);
   const handleClose = () => setOpen(false);
@@ -187,6 +214,7 @@ function Patientsignup() {
       showSnack("Insurance expiration date must be in the future.");
       return;
     }
+
   
     setLoading(true);
   
@@ -216,7 +244,8 @@ function Patientsignup() {
       patient_state: values.state,
       medical_conditions: medicalConditions.join(', ') || "None",
       family_history: "None",
-      past_procedures: "None"
+      past_procedures: "None",
+      profile_pic: values.profile_pic || defaultAvatar
     };
     console.log("Data:", fullData);
   
@@ -927,6 +956,7 @@ function Patientsignup() {
                       : <VisibilityOffIcon />}
                   </Button>
                   </label>
+
                 </div>      
                 <div className='labels'> 
                   <label className='input-group' onClick={handleOpen}>Do you Accept the terms and conditions? 
@@ -969,6 +999,55 @@ function Patientsignup() {
 
                 </div>            
               </div>
+
+                <div>
+                    <h1>Profile Picture</h1>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+                            <Button
+                              variant="contained"
+                              component="label"
+                              sx={{ bgcolor: '#A0B9DA', width: '100%' ,textAlign:'center', height: '100%'}}
+                            >
+                              Upload Image File
+                          <input 
+                            hidden 
+                            accept="image/*" 
+                            type="file" 
+                            onChange={handleFileUpload}
+                          />
+
+                            </Button>
+
+                            {/* File name shown to the right of button */}
+                            {values.profile_pic ? (
+                              <div style={{ marginTop: '10px' }}>
+                                <img 
+                                  src={values.profile_pic} 
+                                  alt="Profile preview" 
+                                  style={{ maxWidth: '100px', maxHeight: '100px' }}
+                                />
+                              </div>
+                            ) : (
+                              <div style={{ marginTop: '10px' }}>
+                                <img 
+                                  src={defaultAvatar} 
+                                  alt="Default profile" 
+                                  style={{ 
+                                    maxWidth: '100px', 
+                                    maxHeight: '100px',
+                                    borderRadius: '50%'
+                                  }}
+                                />
+                              </div>
+                            )}
+                            {uploadedFileName && (
+                              <Typography sx={{ fontSize: '0.9rem', color: '#5E4B8B', fontWeight: 'bold' }}>
+                                {uploadedFileName}
+                              </Typography>
+                            )}
+                          </Box>
+                </div>
+
             </div>
 
             <div className="signuptext">
@@ -978,6 +1057,9 @@ function Patientsignup() {
 
               </div>
             </div>
+              
+
+
           </div>
         </form>
         <Snackbar
