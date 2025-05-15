@@ -283,7 +283,7 @@ hr{
     font-weight: 500; /* Make text slightly bolder */
   }
 
-  input[type="text"],
+input[type="text"],
 input[type="email"],
 input[type="number"],
 input[type="tel"],

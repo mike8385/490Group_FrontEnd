@@ -15,6 +15,8 @@ import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import Snackbar from '@mui/material/Snackbar';
 import MuiAlert from '@mui/material/Alert';
+import defaultAvatar from "../doctor_dashboard/doctorim/doctor1.png"; // Default avatar image
+
 
 const apiUrl = process.env.REACT_APP_API_URL;
 
@@ -48,7 +50,8 @@ function Doctorsignup() {
     med_school: '',
     years_of_practice: '',
     payment_fee: '',
-    specialty: ''
+    specialty: '',
+    doctor_picture: ''
   });
 
   const navigate = useNavigate();
@@ -62,6 +65,35 @@ function Doctorsignup() {
   const [snackOpen, setSnackOpen] = useState(false);
   const [snackMsg, setSnackMsg] = useState("");
   const [snackType, setSnackType] = useState("error");
+  const [imageBase64, setImageBase64] = useState('');
+
+  const [uploadedFileName, setUploadedFileName] = React.useState('');
+
+const handleFileUpload = (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  // Validate file type and size
+  if (!file.type.match('image.*')) {
+    showSnack('Please upload an image file (JPEG, PNG, etc.)');
+    return;
+  }
+
+  if (file.size > 2 * 1024 * 1024) {
+    showSnack('Image must be smaller than 2MB');
+    return;
+  }
+
+  setUploadedFileName(file.name);
+  const reader = new FileReader();
+  reader.onloadend = () => {
+    const result = reader.result;
+    // Extract just the base64 portion
+    const base64Data = result.split(',')[1];
+    setValues({...values, doctor_picture: base64Data});
+  };
+  reader.readAsDataURL(file);
+};
 
   const showSnack = (msg, type = "error") => {
     setSnackMsg(msg);
@@ -208,7 +240,8 @@ function Doctorsignup() {
       address: values.address,
       zipcode: values.zip,
       city: values.city,
-      state: values.state
+      state: values.state,
+      doctor_picture: values.doctor_picture || defaultAvatar
     };
     
     fetch(`${apiUrl}/register-doctor`, {
@@ -627,6 +660,44 @@ function Doctorsignup() {
                   </Modal>
                 </div>            
               </div>
+
+              <div>
+                  <h1>Profile Picture</h1>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+                          <Button
+                            variant="contained"
+                            component="label"
+                            sx={{ bgcolor: '#A0B9DA', width: '100%' ,textAlign:'center', height: '100%'}}
+                          >
+                            Upload Image File
+                        <input 
+                          hidden 
+                          accept="image/*" 
+                          type="file" 
+                          onChange={handleFileUpload}
+                        />
+
+                          </Button>
+
+                          {/* File name shown to the right of button */}
+                          {values.doctor_picture && (
+                                <div style={{ marginTop: '10px' }}>
+                                  <img 
+                                    src={values.doctor_picture} 
+                                    alt="Profile preview" 
+                                    style={{ maxWidth: '100px', maxHeight: '100px' }}
+                                  />
+                                </div>
+                              )}
+                          {uploadedFileName && (
+                            <Typography sx={{ fontSize: '0.9rem', color: '#5E4B8B', fontWeight: 'bold' }}>
+                              {uploadedFileName}
+                            </Typography>
+                          )}
+                        </Box>
+              </div>
+
+
             </div>
 
             <div className="signuptext">

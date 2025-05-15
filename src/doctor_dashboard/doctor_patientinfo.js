@@ -5,6 +5,9 @@ import { styled } from '@mui/material/styles';
 import { Tabs, Tab, Box, Paper, Typography, Button } from '@mui/material';
 import ArrowCircleRightOutlinedIcon from '@mui/icons-material/ArrowCircleRightOutlined';
 import Plot from 'react-plotly.js';
+import Snackbar from '@mui/material/Snackbar';
+import MuiAlert from '@mui/material/Alert';
+
 const apiUrl = process.env.REACT_APP_API_URL;
 
 
@@ -12,6 +15,26 @@ const apiUrl = process.env.REACT_APP_API_URL;
 
 
 function DoctorPatientInfo() {
+
+  const [snackOpen, setSnackOpen] = useState(false);
+  const [snackMsg, setSnackMsg] = useState("");
+  const [snackType, setSnackType] = useState("error");
+
+  const showSnack = (msg, type = "error") => {
+    setSnackMsg(msg);
+    setSnackType(type);
+    setSnackOpen(true);
+  };
+      <Snackbar
+        open={snackOpen}
+        autoHideDuration={4000}
+        onClose={() => setSnackOpen(false)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <MuiAlert onClose={() => setSnackOpen(false)} severity={snackType} variant="filled" sx={{ width: '100%' }}>
+          {snackMsg}
+        </MuiAlert>
+      </Snackbar>
 
     const [activeTab, setActiveTab] = useState(0);
     const [pastAppointments, setPastAppointments] = useState([]);
@@ -278,11 +301,11 @@ function DoctorPatientInfo() {
               const result = await response.json();
               if (!response.ok) throw new Error(result.error || "Failed to update patient");
           
-              alert("Patient information updated successfully!");
+              showSnack("Patient information updated successfully!", "success");
               setIsEditing(false);
             } catch (err) {
               console.error("Update error:", err);
-              alert("Error updating patient info.");
+              showSnack("Error updating patient info.");
             }
           };
  

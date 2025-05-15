@@ -1,88 +1,263 @@
 import React, { useState, useEffect, useRef } from "react";
 import Navbar from "./doctor_navbar";
-import { Checkbox, FormControlLabel,FormLabel, FormGroup, Box, Typography, IconButton, Avatar, Modal, TextField,Button,Grid } from "@mui/material";
 import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
 import GridOnIcon from '@mui/icons-material/GridOn';
 import AddIcon from '@mui/icons-material/Add';
 import MealCard from "./MealPlanCard"; // Make sure MealCard is exported from mealPlanCard.js
-import food1 from "./reciepe photo.png"; // Or replace with relevant image
 import profileBackground from "./profile_assets/profile_background.png"
 import ProfileImg from "./profile_assets/profilePageImg.png"
 import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
+import Snackbar from '@mui/material/Snackbar';
+import MuiAlert from '@mui/material/Alert';
+import { Radio, RadioGroup, Typography,Grid,Button,Box,TextField,FormControlLabel,Modal, IconButton, FormLabel, Avatar } from '@mui/material';
+
 const apiUrl = process.env.REACT_APP_API_URL;
 
-const posts = [
-  {
-    author: 'Vinita Acharya',
-    title: 'Cauliflower Fried Rice',
-    tags: ['#Keto'],
-    description: 'Fried rice is a classic...',
-    image: food1,
-    comments: [
-      { firstName: 'Vinita', lastName: 'Acharya', text: 'hi' },
-      { firstName: 'Vinita', lastName: 'Acharya', text: 'vinitaaa' }
-    ],
-  },
-  {
-    author: 'Vinita Acharya',
-    title: 'Marry Me Tofu',
-    tags: ['#Keto', '#Vegan'],
-    description: 'Tofu is versatile...',
-    image: food1,
-    comments: [
-      { firstName: 'Joe', lastName: 'Smith', text: 'love this!' }
-    ],
-  },
-];
-
-
 const Profile = () => {
+
+      const [snackOpen, setSnackOpen] = useState(false);
+      const [snackMsg, setSnackMsg] = useState("");
+      const [snackType, setSnackType] = useState("error");
+    
+      const showSnack = (msg, type = "error") => {
+        setSnackMsg(msg);
+        setSnackType(type);
+        setSnackOpen(true);
+      };
+          <Snackbar
+            open={snackOpen}
+            autoHideDuration={4000}
+            onClose={() => setSnackOpen(false)}
+            anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+          >
+            <MuiAlert onClose={() => setSnackOpen(false)} severity={snackType} variant="filled" sx={{ width: '100%' }}>
+              {snackMsg}
+            </MuiAlert>
+          </Snackbar>
+
+  const [selectedTag, setSelectedTag] = useState('');
+const [customTag, setCustomTag] = useState('');
   const [openCreatePost, setOpenCreatePost] = React.useState(false);
 
 const handleOpenCreatePost = () => setOpenCreatePost(true);
 const handleCloseCreatePost = () => setOpenCreatePost(false);
 
+const [doctorUserId, setDoctorUserId] = useState(null);
 
 const [uploadedFileName, setUploadedFileName] = React.useState('');
-
-const [patientInfo, setPatientInfo] = useState(null);
+const [doctorInfo, setDoctorInfo] = useState(null);
+//Add post useStates
+const [title, setTitle] = useState('');
+const [calories, setCalories] = useState('');
+const [description, setDescription] = useState('');
+const [imageBase64, setImageBase64] = useState('');
 
 const [changeTab, setChangeTab] = React.useState(0);
-const handleChange = (event: React.SyntheticEvent, newValue: number) => {
+const handleChange = (event, newValue) => {
   setChangeTab(newValue);
 };
+useEffect(() => {
+  const doctorId = localStorage.getItem("doctorId");
+  console.log("docs", doctorId);
+
+  if (doctorId) {
+    setDoctorUserId(doctorId); 
+  }
+}, []);
+
 
 useEffect(() => {
   const fetchPatientInfo = async () => {
     const id = localStorage.getItem("doctorId");
     if (!id) {
-      console.warn("No patient ID in localStorage");
+      console.warn("No doctor ID in localStorage");
       return;
     }
 
     try {
       const res = await fetch(`${apiUrl}/doctor/${id}`);
       if (!res.ok) {
-        throw new Error("Failed to fetch patient info");
+        throw new Error("Failed to fetch doctor info");
       }
 
       const data = await res.json();
-      setPatientInfo(data);
+      setDoctorInfo(data);
       console.log("Patient info:", data);
     } catch (error) {
-      console.error("Error fetching patient info:", error);
+      console.error("Error fetching doctor info:", error);
+    }
+  };
+  fetchPatientInfo();
+}, []);
+const [posts, setPosts] = useState([]);
+useEffect(() => {
+  if (doctorInfo && changeTab === 0) {
+    fetchUserPosts( doctorUserId )
+  }
+}, [changeTab, doctorInfo]);
+
+
+const [likedPosts, setLikedPosts] = useState([]);
+
+useEffect(() => {
+  if (changeTab === 1) {
+    const fetchLikedPosts = async () => {
+      const doctorId = localStorage.getItem("doctorId");
+      if (!doctorId) {
+        console.warn("No doctor ID found in localStorage");
+        return;
+      }
+
+    try {
+      const response = await fetch(`${apiUrl}/posts/liked?doctor_id=${doctorId}`);
+      const data = await response.json();
+
+      if (data.liked_posts) {
+        const postDetails = await Promise.all(
+          data.liked_posts.map(async (liked) => {
+            const res = await fetch(`${apiUrl}/posts/${liked.post_id}`);
+            return res.json();
+          })
+        );
+
+        const formattedPosts = postDetails.map(post => ({
+          like_count: post.like_count,
+          comment_count:post.comment_count,
+          post_id: post.post_id,
+          author: `${post.first_name} ${post.last_name}`,
+          title: post.meal_name,
+          tags: [`#${post.tag}`],
+          description: post.description,
+          image: `${post.picture}`,
+          comments: []
+        }));
+
+        setLikedPosts(formattedPosts);
+      }
+    } catch (err) {
+      console.error("Error fetching liked posts:", err);
     }
   };
 
-  fetchPatientInfo();
-}, []);
+  fetchLikedPosts();
+}
+}, [changeTab]);
+const handleRemoveLikedPost = (postIdToRemove) => {
+  setLikedPosts(prevPosts => prevPosts.filter(post => post.post_id !== postIdToRemove));
+};
+const [openAboutMe, setOpenAboutMe] = useState(false);
+const handleOpenAboutMe = () => setOpenAboutMe(true);
+const handleCloseAboutMe = () => setOpenAboutMe(false);
+const fetchUserPosts = async (user_id) => {
+  try {
+    const res = await fetch(`${apiUrl}/posts/user/${user_id}`);
+    const data = await res.json();
+    const formattedPosts = data.map(post => ({
+      like_count: post.like_count,
+      comment_count: post.comment_count,
+      post_id: post.post_id,
+      author: `${post.first_name} ${post.last_name}`,
+      title: post.meal_name,
+      tags: [`#${post.tag}`],
+      description: post.description,
+      image: `${post.picture}`,
+    }));
+    setPosts(formattedPosts);
+  } catch (error) {
+    console.error("Error fetching posts:", error);
+  }
+};
+
+//add new post handling
+const handleCreatePost = async () => {
+  const user_id = doctorUserId;
+  const meal_name = title;
+  const meal_calories = parseInt(calories);
+  const tagToSubmit = selectedTag === "Other" ? customTag : selectedTag;
+  
+  if (!user_id || !meal_name || !description || !imageBase64 || !tagToSubmit) {
+    showSnack("Please fill out all fields.");
+    return;
+  }
+
+  
+
+  try {
+    const res = await fetch(`${apiUrl}/add-post`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        user_id:user_id,
+        meal_name:title,
+        meal_calories:meal_calories,
+        description:description,
+        picture: imageBase64,
+        add_tag: tagToSubmit
+      })
+    });
+      console.log('userId',user_id);
+
+    if (!res.ok) throw new Error("Failed to create post");
+
+    const data = await res.json();
+    console.log("Post created:", data);
+    showSnack("Post successfully created!", "success");
+
+    // Optional: Reset form
+    setTitle('');
+    setCalories('');
+    setDescription('');
+    setSelectedTag('');
+    setCustomTag('');
+    setUploadedFileName('');
+    setImageBase64('');
+    handleCloseCreatePost();
+    fetchUserPosts(user_id); // Refresh user's posts
+  } catch (error) {
+    console.error("Error creating post:", error);
+    showSnack("There was a problem creating the post.");
+  }
+};
+
+
   return (
     <Box display="flex">
       <Navbar />
 
       <Box sx={{ flexGrow: 1, padding: 2 }}>
         {/* Profile Header */}
+
+<Modal open={openAboutMe} onClose={handleCloseAboutMe}>
+  <Box
+    sx={{
+      position: 'absolute',
+      top: '50%',
+      left: '50%',
+      transform: 'translate(-50%, -50%)',
+      width: "45vh",
+      bgcolor: '#F5F7FF',
+      borderRadius: '15px',
+      boxShadow: 24,
+      p: 3,
+      textAlign: 'center'
+    }}
+  >
+    <Typography variant="h6" sx={{ fontFamily: 'Montserrat', color: '#5E4B8B', mb: 2 }}>
+      💬 About Me
+    </Typography>
+    <Typography sx={{ fontFamily: 'Montserrat', color: '#333', mb: 1 }}>
+      <strong>From:</strong> {doctorInfo?.city || "N/A"}
+    </Typography>
+    <Typography sx={{ fontFamily: 'Montserrat', color: '#333' }}>
+      <strong>About Me:</strong> {doctorInfo?.description || "N/A"}
+    </Typography>
+    <Button onClick={handleCloseAboutMe} sx={{ mt: 3, bgcolor: '#A0B9DA', color: 'white', fontFamily: 'Montserrat' }}>
+      Close
+    </Button>
+  </Box>
+</Modal>
+
         <Box 
         sx={{
           borderTopLeftRadius:'3vh',
@@ -101,10 +276,13 @@ useEffect(() => {
               sx={{ width:'15vh', height: '15vh', margin: '0 auto' }}
             />
            
-          {patientInfo && (
-            <Typography  variant="h6" sx={{ color:'white', mt: 1, fontFamily: 'Montserrat', fontSize: '1.5em' }}>
-                {patientInfo.first_name} {patientInfo.last_name}
-            </Typography>)}           
+           {doctorInfo &&(
+  <>
+    <Button onClick={handleOpenAboutMe}  sx={{ color:'white', fontFamily: 'Montserrat', fontSize: '2.5vh', textTransform: 'none' }}>ℹ️{doctorInfo.first_name} {doctorInfo.last_name}</Button>
+
+  </>
+)}
+
           </Box>
         </Box>
         <Box sx={{backgroundColor:'#EEF2FE', minHeight:'70vh'}}>
@@ -113,17 +291,20 @@ useEffect(() => {
       <Tab icon={<GridOnIcon />} aria-label="grid" />
       <Tab icon={<FavoriteBorderIcon />} aria-label="favorite" />
     </Tabs>
+
     {changeTab === 0 && (
       <>
         {/* Posts Grid */}
         <Grid container spacing={3}>
-        {patientInfo && posts.map((post, index) => (
+        {doctorInfo && posts.slice(0, 7).map((post, index) => (
   <Grid item xs={12} sm={6} md={4} key={index}>
     <MealCard
       meal={post}
-      patientInfo={{
-        firstName: patientInfo.first_name,
-        lastName: patientInfo.last_name,
+      doctorInfo={{
+        user_id: doctorUserId,
+        doctor_id: doctorInfo.doctor_id, 
+        firstName: doctorInfo.first_name,
+        lastName: doctorInfo.last_name,
       }}
     />
   </Grid>
@@ -154,20 +335,25 @@ useEffect(() => {
               <AddIcon sx={{ fontSize: 40 }} />
             </Box>
           </Grid>
-          <Modal open={openCreatePost} onClose={handleCloseCreatePost}>
-  <Box
-    sx={{
-      position: 'absolute',
-      top: '50%',
-      left: '50%',
-      transform: 'translate(-50%, -50%)',
-      width: "65vh",
-      bgcolor: '#F5F7FF',
-      borderRadius: '15px',
-      boxShadow: 24,
-      overflow: 'hidden', // so the header is connected
-    }}
-  >
+
+
+        </Grid></>
+        
+      )}
+        <Modal open={openCreatePost} onClose={handleCloseCreatePost}>
+    <Box
+      sx={{
+        position: 'absolute',
+        top: '50%',
+        left: '50%',
+        transform: 'translate(-50%, -50%)',
+        width: "65vh",
+        bgcolor: '#F5F7FF',
+        borderRadius: '15px',
+        boxShadow: 24,
+        overflow: 'hidden', // so the header is connected
+      }}
+    >
     {/* Header */}
     <Box sx={{ bgcolor: '#5E4B8B', p:'.5vh', display: 'flex', alignItems: 'center' }}>
       <Typography sx={{flexGrow:'1',textAlign:"center", color: 'white', fontWeight: 'bold', fontFamily: 'Montserrat' }}>
@@ -188,16 +374,31 @@ useEffect(() => {
     sx={{ bgcolor: '#A0B9DA', width: '29%' ,textAlign:'center'}}
   >
     Upload Image File
-    <input 
-      hidden 
-      accept="image/*" 
-      type="file" 
-      onChange={(e) => {
-        if (e.target.files.length > 0) {
-          setUploadedFileName(e.target.files[0].name);
-        }
-      }}
-    />
+<input 
+  hidden 
+  accept="image/*" 
+  type="file" 
+  onChange={(e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setUploadedFileName(file.name);
+      const reader = new FileReader();
+reader.onloadend = () => {
+  const result = reader.result;
+  if (typeof result === "string" && result.includes(',')) {
+    const base64Only = result.split(',')[1]; // 👈 only get base64
+    console.log('imageulr', base64Only)
+    setImageBase64(base64Only);
+  } else {
+    console.warn("Unexpected file format for base64 image.");
+  }
+};
+
+      reader.readAsDataURL(file);
+    }
+  }}
+/>
+
   </Button>
 
   {/* File name shown to the right of button */}
@@ -211,20 +412,44 @@ useEffect(() => {
 
 <Box display={"flex"}> 
 <Typography sx={{ color: 'white',  fontFamily: 'Montserrat', bgcolor: '#A0B9DA', width: '44%' ,textAlign:'center', height:'6.7vh', borderRadius:'.5vh' }}>
-        Create Post
+      Title
 </Typography>    
-  <TextField fullWidth label="Title" variant="outlined" sx={{ml:2, mb: 2 }} />
+  <TextField fullWidth label="Title" variant="outlined" value={title} onChange={(e) => setTitle(e.target.value)} sx={{ml:2, mb: 2 }} />
 </Box>
 
 
-<Box sx={{ mb: 2 , display:'flex'}}>
-  <FormLabel component="legend" sx={{mr:'2vh',color: 'white',  fontFamily: 'Montserrat', bgcolor: '#A0B9DA', width: '35%' ,textAlign:'center', height:'6.7vh', borderRadius:'.5vh' }}>Hashtags</FormLabel>
-  <FormGroup row> {/* row makes them horizontal! */}
-    <FormControlLabel control={<Checkbox />} label="Keto" />
-    <FormControlLabel control={<Checkbox />} label="Vegan" />
-    <FormControlLabel control={<Checkbox />} label="Paleo" />
-    <FormControlLabel control={<Checkbox />} label="Low-Carbs" />
-  </FormGroup>
+<Box sx={{mt:'2vh', mb: 2 , display:'flex'}}>
+  <FormLabel component="legend" sx={{mr:'2vh',color: 'white',  fontFamily: 'Montserrat', bgcolor: '#A0B9DA', width: '30%' ,textAlign:'center', height:'6.7vh', borderRadius:'.5vh' }}>Hashtags</FormLabel>
+<RadioGroup
+  column
+  value={selectedTag}
+  onChange={(e) => setSelectedTag(e.target.value)}
+>
+  <FormControlLabel value="Keto" control={<Radio />} label="#Keto" />
+  <FormControlLabel value="Vegan" control={<Radio />} label="#Vegan" />
+  <FormControlLabel value="Paleo" control={<Radio />} label="#Paleo" />
+  <FormControlLabel value="Low-Carbs" control={<Radio />} label="#Low-Carbs" />
+  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+    <FormControlLabel value="Other" control={<Radio />} label="Other" />
+    {selectedTag === "Other" && (
+      <TextField
+        size="small"
+        label="Other"
+        //variant="outlined"
+        value={customTag}
+        onChange={(e) => setCustomTag(e.target.value)}
+      />
+    )}
+  </Box>
+</RadioGroup>
+
+</Box>
+<Box sx={{mb:'2vh'}}display={"flex"}> 
+<Typography sx={{ color: 'white',  fontFamily: 'Montserrat', bgcolor: '#A0B9DA', width: '44%' ,textAlign:'center', height:'6.7vh', borderRadius:'.5vh' }}>
+        Calories
+</Typography>    
+  <TextField fullWidth label="Number of calories" variant="outlined" value={calories}   onChange={(e) => setCalories(e.target.value)}
+ sx={{ml:2, mb: 2 }} />
 </Box>
 <Box display={'flex'}>
 <Typography sx={{ color: 'white',  fontFamily: 'Montserrat', bgcolor: '#A0B9DA', width: '45%' ,textAlign:'center', height:'6.7vh', borderRadius:'.5vh' }}>
@@ -236,12 +461,15 @@ useEffect(() => {
         multiline
         rows={8}
         variant="outlined"
+        value={description}
+        onChange={(e) => setDescription(e.target.value)}
         sx={{ ml: '2vh' , mb:'2vh'}}
       />
 </Box>
       <Button
         fullWidth
         variant="contained"
+        onClick={handleCreatePost}
         sx={{
           bgcolor: '#A0B9DA',
           '&:hover': { bgcolor: '#8CAACF' },
@@ -254,32 +482,47 @@ useEffect(() => {
     </Box>
   </Box>
 </Modal>
-
-        </Grid></>
-      )}
 {changeTab === 1 && (
-  <Grid container spacing={3} justifyContent="center" alignItems="center" sx={{ minHeight: '50vh' }}>
-    <Grid item xs={12} textAlign="center">
-      <Box
-        sx={{
-          backgroundColor: '#F5F7FF',
-          border: '2px dashed #A0B9DA',
-          borderRadius: '15px',
-          padding: '5vh',
-          display: 'inline-block',
-        }}
-      >
-        <FavoriteBorderIcon sx={{ fontSize: 60, color: '#A0B9DA', mb: 2 }} />
-        <Typography variant="h5" sx={{ color: '#5E4B8B', fontFamily: 'Montserrat', fontWeight: 'bold' }}>
-          No Liked Posts Yet
-        </Typography>
-        <Typography sx={{ color: '#7A7A7A', mt: 1, fontFamily: 'Montserrat' }}>
-          Start exploring and like some posts!
-        </Typography>
-      </Box>
-    </Grid>
+  <Grid container spacing={3}>
+    {likedPosts.length > 0 ? (
+      likedPosts.map((post, index) => (
+        <Grid item xs={12} sm={6} md={4} key={index}>
+          <MealCard
+            meal={post}
+            doctorInfo={{
+              user_id: doctorUserId,
+              doctor_id: doctorInfo.doctor_id,
+              firstName: doctorInfo.first_name,
+              lastName: doctorInfo.last_name,
+            }}
+            removeFromLikedPosts={handleRemoveLikedPost}
+          />
+        </Grid>
+      ))
+    ) : (
+      <Grid item xs={12} textAlign="center">
+        <Box
+          sx={{
+            backgroundColor: '#F5F7FF',
+            border: '2px dashed #A0B9DA',
+            borderRadius: '15px',
+            padding: '5vh',
+            display: 'inline-block',
+          }}
+        >
+          <FavoriteBorderIcon sx={{ fontSize: 60, color: '#A0B9DA', mb: 2 }} />
+          <Typography variant="h5" sx={{ color: '#5E4B8B', fontFamily: 'Montserrat', fontWeight: 'bold' }}>
+            No Liked Posts Yet
+          </Typography>
+          <Typography sx={{ color: '#7A7A7A', mt: 1, fontFamily: 'Montserrat' }}>
+            Start exploring and like some posts!
+          </Typography>
+        </Box>
+      </Grid>
+    )}
   </Grid>
 )}
+
 
       </Box>
     </Box>

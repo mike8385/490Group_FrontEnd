@@ -14,9 +14,11 @@ import {
   Divider
 } from '@mui/material';
 import Pagination from '@mui/material/Pagination';
+import Snackbar from '@mui/material/Snackbar';
+import MuiAlert from '@mui/material/Alert';
 
-import MealCard from "./patient_dashboard/MealPlanCard"; // Make sure MealCard is exported from mealPlanCard.js
-
+import MealCardPatient from "./patient_dashboard/MealPlanCard"; // Make sure MealCardPatient is exported from mealPlanCard.js
+import MealCardDoctor from "./doctor_dashboard/MealPlanCard";
 import PatientNavbar from './patient_dashboard/patient_navbar';
 import DoctorNavbar from './doctor_dashboard/doctor_navbar';
 import CommunityImg from './community_homepage_img.png';
@@ -24,7 +26,9 @@ import food1 from "./reciepe photo.png";
 const apiUrl = process.env.REACT_APP_API_URL;
 
 export default function CommunityForum() {
+
   const [isDoctor, setIsDoctor] = useState(true); // 👈 clearer flag
+  const MealCardComponent = isDoctor ? MealCardDoctor : MealCardPatient;
 
   useEffect(() => {
     console.log("localStorage snapshot:", { 
@@ -44,8 +48,30 @@ export default function CommunityForum() {
       setIsDoctor(false); // 👈 patient is logged in
     }
   }, []);
+const [doctorUserId, setDoctorUserId] = useState(null);
+useEffect(() => {
+  const doctorId = localStorage.getItem("doctorId");
+  const patientId = localStorage.getItem("patientId");
+
+  if (doctorId && doctorId !== 'undefined') {
+    setIsDoctor(true);
+
+    // Fetch doctor user_id
+    fetch(`${apiUrl}/user?doctor_id=${doctorId}`)
+      .then(res => res.json())
+      .then(data => {
+        setDoctorUserId(data.user_id); // Save it to state
+        console.log("Doctor user ID:", data.user_id);
+      })
+      .catch(err => console.error("Failed to fetch doctor user_id", err));
+  } else {
+    setIsDoctor(false);
+  }
+}, []);
 
 const [patientInfo, setPatientInfo] = useState(null);
+//if doctor fetch doctor infor
+const [doctorInfo, setDoctorInfo] = useState(null);
 useEffect(() => {
   const fetchPatientInfo = async () => {
     const id = localStorage.getItem("patientId");
@@ -56,10 +82,7 @@ useEffect(() => {
 
     try {
       const res = await fetch(`${apiUrl}/patient/${id}`);
-      if (!res.ok) {
-        throw new Error("Failed to fetch patient info");
-      }
-
+      if (!res.ok) throw new Error("Failed to fetch patient info");
       const data = await res.json();
       setPatientInfo(data);
       console.log("Patient info:", data);
@@ -68,10 +91,34 @@ useEffect(() => {
     }
   };
 
+  const fetchDoctorInfo = async () => {
+    const id = localStorage.getItem("doctorId");
+    if (!id) {
+      console.warn("No doctor ID in localStorage");
+      return;
+    }
+
+    try {
+      const res = await fetch(`${apiUrl}/doctor/${id}`);
+      if (!res.ok) throw new Error("Failed to fetch doctor info");
+      const data = await res.json();
+      setDoctorInfo(data);
+      console.log("Doctor info:", data);
+    } catch (error) {
+      console.error("Error fetching doctor info:", error);
+    }
+  };
+
+  if (isDoctor) {
+    fetchDoctorInfo();
+  } else {
+    fetchPatientInfo();
+  }
+}, [isDoctor]);
 
 
-  fetchPatientInfo();
-}, []);
+
+
 const [posts, setPosts] = useState([]);
 const [searchQuery, setSearchQuery] = useState('');
 const [filteredPosts, setFilteredPosts] = useState([]);
@@ -89,7 +136,7 @@ const [selectedCategory, setSelectedCategory] = useState("All");
           title: post.meal_name,
           tags: [`#${post.tag}`],
           description: post.description,
-          image: `data:image/jpeg;base64,${post.picture}`, // Assuming JPEG, adjust if needed
+          image: `${post.picture}`, // Assuming JPEG, adjust if needed
         }));
         setPosts(formattedPosts);
       })
@@ -240,21 +287,34 @@ const paginatedPosts = displayedPosts.slice(
           Featured
         </Typography>
 
-        <Grid container spacing={3}>
-  {patientInfo && paginatedPosts.map((post, index) => (
-            <Grid item xs={12} sm={6} md={4} key={index}>
-              <MealCard
-                meal={post}
-                patientInfo={{
-                  user_id: patientInfo.user_id,
-                  patient_id: patientInfo.patient_id, //  
-                  firstName: patientInfo.first_name,
-                  lastName: patientInfo.last_name,
-                }}
-              />
-            </Grid>
-          ))}
-        </Grid>
+<Grid container spacing={3}>
+  {paginatedPosts.map((post, index) => (
+    <Grid item xs={12} sm={6} md={4} key={index}>
+      <MealCardComponent
+        meal={post}
+        {...(!isDoctor
+          ? {
+              patientInfo: {
+                user_id: patientInfo?.user_id,
+                patient_id: patientInfo?.patient_id,
+                firstName: patientInfo?.first_name,
+                lastName: patientInfo?.last_name,
+              }
+            }
+          : {
+              doctorInfo: {
+                user_id: isDoctor ? doctorUserId : undefined,
+                doctor_id: doctorInfo?.doctor_id,
+                firstName: doctorInfo?.first_name,
+                lastName: doctorInfo?.last_name,
+              }
+            })}
+      />
+    </Grid>
+  ))}
+</Grid>
+
+
         <Box display="flex" justifyContent="center" mt={4}>
   <Pagination
     count={totalPages}

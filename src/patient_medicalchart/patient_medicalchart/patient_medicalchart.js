@@ -68,7 +68,7 @@ function Patient_Chart() {
           if (!id) return;
       
           try {
-            const res = await fetch(`/daily-surveys/${patientId}`);
+            const res = await fetch(`${apiUrl}/daily-surveys/${patientId}`);
             const data = await res.json();
       
             // Sort by date just to be safe
@@ -91,7 +91,7 @@ function Patient_Chart() {
           }
       
           try {
-            const res = await fetch(`/weekly-surveys/${patientId}`);
+            const res = await fetch(`${apiUrl}/weekly-surveys/${patientId}`);
             if (!res.ok) {
               throw new Error("Failed to fetch patient info");
             }

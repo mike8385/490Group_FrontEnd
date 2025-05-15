@@ -378,7 +378,10 @@ const handleCloseModal = () => setOpenModal(false);
     <>
     <Card sx={{ maxWidth: '43vh', height:'55vh', mx:4, my:2 }}>
   
-      <CardMedia component="img"  image={testImage} style={{padding:4}} alt={title} />
+      <CardMedia component="img"  image={meal.image}
+       sx={{ height: '30vh', width: '100%' }} 
+      style={{ padding: 0, objectFit: 'cover' }} 
+      alt={title} />
       
       <CardContent>
       <div style={{ marginBottom: 8 }}>
@@ -488,9 +491,10 @@ const handleCloseModal = () => setOpenModal(false);
     {/* Fixed Image at Top */}
     <CardMedia
       component="img"
-      image={testImage}
+      image={meal.image}
       alt={title}
-      sx={{ width: '100%', maxHeight: '40vh', objectFit: 'cover' }}
+      sx={{ height: '45vh', width: '100%' }} 
+      style={{ padding: 0, objectFit: 'cover' }} 
     />
 
     {/* Scrollable Description */}
@@ -518,7 +522,7 @@ const handleCloseModal = () => setOpenModal(false);
         borderTop: '1px solid #ccc',
         px: 2,
         py: 1,
-        maxHeight: '25vh',
+        height: '25vh',
         display: 'flex',
         flexDirection: 'column',
       }}

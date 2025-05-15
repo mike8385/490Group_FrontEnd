@@ -24,6 +24,8 @@ import Doctor_Info from './doctor_dashboard/doctor_info';
 import Doctor_Profile from './doctor_dashboard/profile';
 import DoctorPatientInfo from './doctor_dashboard/doctor_patientinfo';
 import { SurveyProvider } from './patient_medicalchart/patient_medicalchart/Survey_context';
+import Snackbar from '@mui/material/Snackbar';
+import MuiAlert from '@mui/material/Alert';
 
 
 function App() {

@@ -7,6 +7,8 @@ import { styled } from '@mui/material/styles';
 import { Typography } from "@mui/material";
 import backImg from "./assets/purpback.png"
 import { TextField, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Button } from "@mui/material";
+import Snackbar from '@mui/material/Snackbar';
+import MuiAlert from '@mui/material/Alert';
 const apiUrl = process.env.REACT_APP_API_URL;
 const sectionStyle = {
     padding: "20px",
@@ -58,6 +60,17 @@ const mockDescriptions = [
     },
 ];
 function Pharmacy_Landing() {
+    
+      const [snackOpen, setSnackOpen] = useState(false);
+      const [snackMsg, setSnackMsg] = useState("");
+      const [snackType, setSnackType] = useState("error");
+  
+      const showSnack = (msg, type = "error") => {
+        setSnackMsg(msg);
+        setSnackType(type);
+        setSnackOpen(true);
+      };
+    
     const [pharmacyInfo, setPharmacyInfo] = useState(null);
     const [pharmacyStock, setPharmacyStock] = useState([]);
 
@@ -139,9 +152,9 @@ function Pharmacy_Landing() {
                 const errorData = await response.json();
     
             if (errorData.error === "Not enough stock to fill this prescription.") {
-                alert(`❌ Cannot fill prescription:\nRequired: ${errorData.required_quantity}, Available: ${errorData.available_stock}`);
+                showSnack(`❌ Cannot fill prescription:\nRequired: ${errorData.required_quantity}, Available: ${errorData.available_stock}`);
             } else {
-                alert(`⚠️ Error: ${errorData.error}`);
+                showSnack(`⚠️ Error: ${errorData.error}`);
             }
             return;
             }
@@ -161,7 +174,7 @@ function Pharmacy_Landing() {
                     setRequests(data);
                 } else {
                     const errorData = await response.json();
-                    alert(`Error fetching requests: ${errorData.error}`);
+                    showSnack(`Error fetching requests: ${errorData.error}`);
                 }
             } catch (error) {
                 console.error('Error fetching requests:', error);

@@ -4,16 +4,31 @@ import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
 import GridOnIcon from '@mui/icons-material/GridOn';
 import AddIcon from '@mui/icons-material/Add';
 import MealCard from "./MealPlanCard"; // Make sure MealCard is exported from mealPlanCard.js
-import food1 from "./reciepe photo.png"; // Or replace with relevant image
 import profileBackground from "./profile_assets/profile_background.png"
 import ProfileImg from "./profile_assets/profilePageImg.png"
 import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
+import Snackbar from '@mui/material/Snackbar';
+import MuiAlert from '@mui/material/Alert';
+
+
 import { Radio, RadioGroup, Typography,Grid,Button,Box,TextField,FormControlLabel,Modal, IconButton, FormLabel, Avatar } from '@mui/material';
 
 const apiUrl = process.env.REACT_APP_API_URL;
 
-  const Profile = () => {
+const Profile = () => {
+
+      const [snackOpen, setSnackOpen] = useState(false);
+      const [snackMsg, setSnackMsg] = useState("");
+      const [snackType, setSnackType] = useState("error");
+  
+      const showSnack = (msg, type = "error") => {
+        setSnackMsg(msg);
+        setSnackType(type);
+        setSnackOpen(true);
+      };
+
+
   const [selectedTag, setSelectedTag] = useState('');
 const [customTag, setCustomTag] = useState('');
   const [openCreatePost, setOpenCreatePost] = React.useState(false);
@@ -90,6 +105,7 @@ useEffect(() => {
 }, []);
 const [likedPosts, setLikedPosts] = useState([]);
 
+
 useEffect(() => {
   if (changeTab === 1) {
     const fetchLikedPosts = async () => {
@@ -119,7 +135,7 @@ useEffect(() => {
           title: post.meal_name,
           tags: [`#${post.tag}`],
           description: post.description,
-          image: `data:image/jpeg;base64,${post.picture}`,
+          image: `${post.picture}`,
           comments: []
         }));
 
@@ -151,7 +167,7 @@ const fetchUserPosts = async (user_id) => {
       title: post.meal_name,
       tags: [`#${post.tag}`],
       description: post.description,
-      image: `data:image/jpeg;base64,${post.picture}`,
+      image: `${post.picture}`,
     }));
     setPosts(formattedPosts);
   } catch (error) {
@@ -167,7 +183,7 @@ const handleCreatePost = async () => {
   const tagToSubmit = selectedTag === "Other" ? customTag : selectedTag;
 
   if (!user_id || !meal_name || !description || !imageBase64 || !tagToSubmit) {
-    alert("Please fill out all fields.");
+    showSnack("Please fill out all fields.");
     return;
   }
 
@@ -176,10 +192,10 @@ const handleCreatePost = async () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        user_id,
-        meal_name,
-        meal_calories,
-        description,
+        user_id:user_id,
+        meal_name:title,
+        meal_calories:meal_calories,
+        description:description,
         picture: imageBase64,
         add_tag: tagToSubmit
       })
@@ -189,7 +205,7 @@ const handleCreatePost = async () => {
 
     const data = await res.json();
     console.log("Post created:", data);
-    alert("Post successfully created!");
+    showSnack("Post successfully created!", "sucess");
 
     // Optional: Reset form
     setTitle('');
@@ -203,7 +219,7 @@ const handleCreatePost = async () => {
     fetchUserPosts(user_id); // Refresh user's posts
   } catch (error) {
     console.error("Error creating post:", error);
-    alert("There was a problem creating the post.");
+    showSnack("There was a problem creating the post.");
   }
 };
 
@@ -370,14 +386,16 @@ const handleCreatePost = async () => {
     if (file) {
       setUploadedFileName(file.name);
       const reader = new FileReader();
-      reader.onloadend = () => {
-        const result = reader.result;
-        if (typeof result === "string" && result.includes(',')) {
-          setImageBase64(result.split(',')[1]); // safe base64 split
-        } else {
-          console.warn("Unexpected file format for base64 image.");
-        }
-      };
+reader.onloadend = () => {
+  const result = reader.result;
+  if (typeof result === "string" && result.includes(',')) {
+    const base64Only = result.split(',')[1]; // 👈 only get base64
+    console.log('imageulr', base64Only)
+    setImageBase64(base64Only);
+  } else {
+    console.warn("Unexpected file format for base64 image.");
+  }
+};
       reader.readAsDataURL(file);
     }
   }}

@@ -22,6 +22,7 @@ function Doctor_Patientlist() {
   const [patients, setPatients] = useState([]);
   const [openLearnMore, setOpenLearnMore] = useState(false);
   const [selectedPatient, setSelectedPatient] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
     fetch(`${apiUrl}/doc_patients/${doctorId}`)
@@ -42,13 +43,35 @@ function Doctor_Patientlist() {
     <div style={{ display: "flex" }}>
       <Doctor_Navbar />
       <Box sx={{ flexGrow: 1, padding: 4, height: "92vh" }}>
-        <Typography variant="h5" sx={{ marginBottom: 2, fontWeight: "medium", fontFamily: 'Montserrat', marginLeft: '1vw', fontSize: '2em' }}>
-          Your Patients
-        </Typography>
-
+        <Box sx={{display:'flex'}}>
+          <Typography variant="h5" sx={{ marginBottom: 2, fontWeight: "medium", fontFamily: 'Montserrat', marginLeft: '1vw', fontSize: '2em' }}>
+            Your Patients
+          </Typography>
+<Box sx={{ marginBottom: 3, marginLeft: '1vw' }}>
+  <input
+    type="text"
+    placeholder="Search patients by name..."
+    value={searchTerm}
+    onChange={(e) => setSearchTerm(e.target.value)}
+    style={{
+      padding: '10px 15px',
+      borderRadius: '10px',
+      border: '1px solid #ccc',
+      width: '30vw',
+      fontSize: '1em',
+      fontFamily: 'Montserrat'
+    }}
+  />
+</Box>
+        </Box>  
         <Box sx={{ backgroundColor: "#EEF2FE", padding: '2vw', borderRadius: 10, width: "80vw", height: "80vh", margin: "auto" }}>
           <Box className="custom-scroll" sx={{ height: "72vh", overflowY: "auto" }}>
-            {patients.map((pat, index) => (
+            {patients
+  .filter(pat =>
+    `${pat.first_name} ${pat.last_name}`
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase())
+  ).map((pat, index) => (
               <Paper
                 key={index}
                 elevation={0}

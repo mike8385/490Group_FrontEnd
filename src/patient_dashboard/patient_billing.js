@@ -17,13 +17,17 @@ import {
 import TablePagination from "@mui/material/TablePagination";
 import { styled } from "@mui/material/styles";
 
+import Snackbar from '@mui/material/Snackbar';
+import MuiAlert from '@mui/material/Alert';
+
+
+
 const apiUrl = process.env.REACT_APP_API_URL;
 
 const columns = [
   { id: "article", label: "Article", minWidth: 150, align: "center" },
   { id: "date", label: "Date", minWidth: 100, align: "left" },
   { id: "appointmentFee", label: "Appointment Charge", minWidth: 100, align: "center" },
-  { id: "prescriptionUnitPrice", label: "Prescription Unit Price", minWidth: 100, align: "center" },
   { id: "totalPrescriptionCharge", label: "Total Presciption Charge", minWidth: 100, align: "center" },
   { id: "credit", label: "Credit", minWidth: 100, align: "right" },
   { id: "currentBill", label: "Current Bill", minWidth: 120, align: "right" },
@@ -39,6 +43,29 @@ const CustomTableCell = styled(TableCell)({
 
 
 function Patient_Billing() {
+  
+
+    const [snackOpen, setSnackOpen] = useState(false);
+    const [snackMsg, setSnackMsg] = useState("");
+    const [snackType, setSnackType] = useState("error");
+
+    const showSnack = (msg, type = "error") => {
+      setSnackMsg(msg);
+      setSnackType(type);
+      setSnackOpen(true);
+    };
+
+    <Snackbar
+      open={snackOpen}
+      autoHideDuration={4000}
+      onClose={() => setSnackOpen(false)}
+      anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+    >
+      <MuiAlert onClose={() => setSnackOpen(false)} severity={snackType} variant="filled" sx={{ width: '100%' }}>
+        {snackMsg}
+      </MuiAlert>
+    </Snackbar>
+    
   const [page, setPage] = React.useState(0);
   const [rowsPerPage, setRowsPerPage] = React.useState(10);
 
@@ -71,70 +98,136 @@ function Patient_Billing() {
   const [cardCVC, setCardCVC] = useState("");
   const [cardName, setCardName] = useState("");
   const [countryRegion, setCountryRegion] = useState("");
+
+  const handlePaymentSubmit = async (e) => {
+  e.preventDefault();
+
+  const numericAmount = parseFloat(amount.replace("$", ""));
+//valdiate 
+  const cardNumberDigits = cardNumber.replace(/\s+/g, '');
+  const cvcDigits = cardCVC.trim();
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   
-  const handlePaymentSubmit = (e) => {
-    e.preventDefault();
-  
-    const numericAmount = parseFloat(amount.replace("$", ""));
-    const newBillTotal = calculateTotalBalance() - numericAmount;
-  
-    const newPaymentRow = {
-      article: "Credit Card Payment",
-      date: new Date().toLocaleDateString(),
-      appointmentFee: "-",
-      prescriptionUnitPrice: "-",
-      totalPrescriptionCharge: "-",
-      credit: `$${numericAmount.toFixed(2)}`,
-      currentBill: `$${newBillTotal.toFixed(2)}`
-    };
-  
-    setRows([...rows, newPaymentRow]);
-    closeMakePaymentModal();
-  
-    console.log("Mock payment submitted:", {
-      amount,
-      email,
-      cardNumber,
-      cardExpir,
-      cardCVC,
-      cardName,
-      countryRegion,
+  if (!/^\d{16}$/.test(cardNumberDigits)) {
+    showSnack("Card number must be 16 digits.");
+    return;
+  }
+
+  if (!/^\d{3,4}$/.test(cvcDigits)) {
+    showSnack("CVC must be 3 or 4 digits.");
+    return;
+  }
+
+  if (!emailRegex.test(email)) {
+    showSnack("Please enter a valid email.");
+    return;
+  }
+
+  if (numericAmount <= 0 || isNaN(numericAmount)) {
+    showSnack("Amount must be a valid positive number.");
+    return;
+  }
+  // Validate expiration date
+const expRegex = /^(0[1-9]|1[0-2])\/\d{2}$/;
+if (!expRegex.test(cardExpir)) {
+  showSnack("Expiration must be in MM/YY format.");
+  return;
+}
+
+// Check if the expiration date is in the past
+const [expMonth, expYear] = cardExpir.split("/").map(Number);
+const now = new Date();
+const currentYear = now.getFullYear() % 100; // Get last two digits of current year
+const currentMonth = now.getMonth() + 1; // JS months are 0-indexed
+
+if (
+  expYear < currentYear ||
+  (expYear === currentYear && expMonth < currentMonth)
+) {
+  showSnack("Card expiration date cannot be in the past.");
+  return;
+}
+
+  try {
+    const response = await fetch(`${apiUrl}/patient/${patientId}/payment`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ credit: numericAmount }),
     });
-  };
+
+    const data = await response.json();
+
+    if (response.status === 201) {
+      const newPaymentRow = {
+        article: data.article,
+        date: new Date().toLocaleDateString(),
+        appointmentFee: "-",
+        totalPrescriptionCharge: "-",
+        credit: `$${numericAmount.toFixed(2)}`,
+        currentBill: `$${data.new_balance.toFixed(2)}`
+      };
+
+      setRows((prevRows) => [...prevRows, newPaymentRow]);
+      closeMakePaymentModal();
+
+      console.log("Payment successful:", data);
+    } else {
+      // Handle 400 or 404 error
+      showSnack(data.error || "Payment failed.");
+    }
+  } catch (error) {
+    console.error("Error submitting payment:", error);
+    showSnack("An error occurred while processing the payment.");
+  }
+};
+
   
   
   
 
-  const [rows, setRows] = useState([
-    {
- 
-      article: "Appt. 1",
-      date: "1/02/25",
-      appointmentFee:"$50",
-      prescriptionUnitPrice: "$50",
-      totalPrescriptionCharge:"$50",
-      charge: "$50",
-      credit: "$0",
-      currentBill: "$100",
-    },
-    {
-      
-      article: "Appt. 2",
-      date: "1/02/25",
-      appointmentFee:"$50",
-      prescriptionUnitPrice: "$50",
-      totalPrescriptionCharge:"$150",
-      charge: "$50",
-      credit: "$0",
-      currentBill: "$300",
-    },
-  ]);
+  const [rows, setRows] = useState([]);
+  const patientId = localStorage.getItem('patientId'); // assuming you're storing patient ID in localStorage
+  console.log('patien  tId',patientId)
+useEffect(() => {
+  const fetchBills = async () => {
+    try {
+      console.log('patientID', patientId);
+      const response = await fetch(`${apiUrl}/patient/${patientId}/bills`);
+      if (!response.ok) throw new Error('Failed to fetch bills');
 
-  const calculateTotalBalance = () => {
-    if (rows.length === 0) return 0;
-    const lastRow = rows[rows.length - 1];
-    return parseFloat(lastRow.currentBill.replace("$", ""));
+      const data = await response.json();
+
+      const formattedData = data.map((item, index) => ({
+        article: item.article !== 'credit' ? `Appt. ${item.article}` : item.article,
+        date: new Date(item.created_at).toLocaleDateString("en-US"), // for the gray text under article
+        appointmentFee: item.doctor_bill ? `$${item.doctor_bill.toFixed(2)}` : "-",
+        totalPrescriptionCharge: item.pharm_bill ? `$${item.pharm_bill.toFixed(2)}` : "-",
+        charge: item.credit === "" ? `$${(item.doctor_bill + item.pharm_bill).toFixed(2)}` : "$0.00",
+        credit: item.credit !== "" ? `$${item.credit.toFixed(2)}` : "$0.00",
+        currentBill: `$${item.current_bill.toFixed(2)}`
+      }));
+
+      setRows(formattedData);
+    } catch (error) {
+      console.error("Error fetching billing data:", error);
+    }
   };
+
+  if (patientId) {
+    fetchBills();
+  }
+}, [patientId]);
+
+
+const calculateTotalBalance = () => {
+  if (!rows.length) return "0.00";
+  const latest = rows[rows.length - 1];
+  const balance = parseFloat(latest.currentBill.replace('$', ''));
+  return Math.abs(balance).toFixed(2);
+};
+
   
   return (
     <div style={{ display: "flex" }}>
@@ -208,9 +301,9 @@ function Patient_Billing() {
               <Typography sx={{ fontWeight: 600, fontFamily: "Montserrat" }}>
                 {row.article}
               </Typography>
-              <Typography variant="body2" sx={{ color: "gray", fontFamily: "Montserrat" }}>
+              {/* <Typography variant="body2" sx={{ color: "gray", fontFamily: "Montserrat" }}>
                 {row.subtitle}
-              </Typography>
+              </Typography> */}
             </>
           ) : column.format && typeof row[column.id] === "number" ? (
             column.format(row[column.id])
@@ -237,7 +330,7 @@ function Patient_Billing() {
           />
 
           <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 3, mr: 2 }}>
-            <Typography variant="subtitle1" sx={{fontFamily: "Montserrat", fontWeight: 600}}>
+            <Typography variant="subtitle1" sx={{mt:'3vh',fontFamily: "Montserrat", fontWeight: 600}}>
               Current Balance <span style={{ color: "#4a4a4a", fontFamily: "Montserrat", marginLeft: '3vw'}}>${calculateTotalBalance()}</span>
             </Typography>
           </Box>
@@ -250,6 +343,7 @@ function Patient_Billing() {
                 backgroundColor: "#6B5DD3",
                 fontFamily: "Montserrat",
                 borderRadius: "20px",
+                mb:'6vh',
                 paddingX: 4,
                 paddingY: 1.5,
                 textTransform: "none",
@@ -316,7 +410,11 @@ function Patient_Billing() {
     fullWidth
     variant="outlined"
     value={cardNumber}
-    onChange={(e) => setcardNumber(e.target.value)}
+onChange={(e) => {
+  let value = e.target.value.replace(/\D/g, "").substring(0, 16);
+  value = value.replace(/(.{4})/g, "$1 ").trim();
+  setcardNumber(value);
+}}
     required
   />
   <Box sx={{ display: "flex", gap: 1 }}>
@@ -325,7 +423,13 @@ function Patient_Billing() {
       variant="outlined"
       fullWidth
       value={cardExpir}
-      onChange={(e) => setCardExpir(e.target.value)}
+onChange={(e) => {
+  let value = e.target.value.replace(/\D/g, "").substring(0, 4);
+  if (value.length >= 3) {
+    value = `${value.substring(0, 2)}/${value.substring(2)}`;
+  }
+  setCardExpir(value);
+}}
       required
     />
     <TextField

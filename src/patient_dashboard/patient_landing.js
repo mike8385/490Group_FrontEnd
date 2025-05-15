@@ -79,6 +79,17 @@ const StyledRating = styled(Rating)({
 
 function Patient_Landing() {
 
+      const [snackOpen, setSnackOpen] = useState(false);
+      const [snackMsg, setSnackMsg] = useState("");
+      const [snackType, setSnackType] = useState("error");
+  
+      const showSnack = (msg, type = "error") => {
+        setSnackMsg(msg);
+        setSnackType(type);
+        setSnackOpen(true);
+      };
+
+
   const [openCancelModal, setOpenCancelModal] = useState(false);
   const [appointmentToCancel, setAppointmentToCancel] = useState(null);
   const [refreshGraph, setRefreshGraph] = useState(false);
@@ -108,11 +119,11 @@ function Patient_Landing() {
           prev.filter(appt => appt.patient_appt_id !== appointmentToCancel)
         );
       } else {
-        alert("Failed to cancel the appointment.");
+        showSnack("Failed to cancel the appointment.");
       }
     } catch (error) {
       console.error("Error:", error);
-      alert("Something went wrong.");
+      showSnack("Something went wrong.");
     } finally {
       closeCancelModal();
     }
@@ -369,7 +380,7 @@ function Patient_Landing() {
     if (
       !weightChange || !weightAmount || !bloodPressure
     ) {
-      setError("All fields are required.");
+      setWeeklyError("All fields are required.");
       return;
     }
     if (!weightChange) {
@@ -586,59 +597,40 @@ function Patient_Landing() {
   }, []);
 
 
-  const handleCreateAppointment = async () => {
-    // 🔁 Put this helper function anywhere above `handleCreateAppointment` (top of component is fine)
-    const formatDateTimeForMySQL = (localDateStr, localTimeStr) => {
-      const timeZone = 'America/New_York';
-      const localDateTime = new Date(`${localDateStr}T${localTimeStr}:00`);
-
-      // Format directly in EDT without converting to UTC
-      return formatInTimeZone(localDateTime, timeZone, 'yyyy-MM-dd HH:mm:ss');
-    };
-
-
-    // 👇 Inside handleCreateAppointment
-    const localDateStr = selectedDate.toISOString().split('T')[0];
-    const appointment_datetime = formatDateTimeForMySQL(localDateStr, selectedTime);
-
-    const newAppointment = {
-      patient_id: patientId,
-      doctor_id: doctorInfo?.doctor_id,  // make sure doctorInfo is loaded
-      appointment_datetime,
-      reason_for_visit: apptReason,
-      current_medications: medications,
-      exercise_frequency: exercise,
-      doctor_appointment_note: "",
-      accepted: 0,
-      meal_prescribed: null
-    };
-
-
-
-    try {
-      const response = await fetch(`${apiUrl}/appointments`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newAppointment),
-      });
-
-
-      if (response.ok) {
-        console.log("Appointment created!");
-
-        // Refresh the appointments from backend
-        const updated = await fetch(`${apiUrl}/appointmentsupcoming/${patientId}`);
-        const updatedData = await updated.json();
-        setUpcomingAppointments(updatedData);
-
-        handleCloseBookAppt();
-      } else {
-        console.error("Failed to create appointment.");
-      }
-    } catch (err) {
-      console.error("Error:", err);
-    }
+const handleCreateAppointment = async () => {
+  // Combine date and time with explicit EDT offset (-04:00)
+  const edtDateTime = `${selectedDate.toISOString().split('T')[0]}T${selectedTime}:00-04:00`;
+  
+  const newAppointment = {
+    patient_id: patientId,
+    doctor_id: doctorInfo?.doctor_id,
+    appointment_datetime: edtDateTime, // Send with explicit EDT offset
+    reason_for_visit: apptReason,
+    current_medications: medications,
+    exercise_frequency: exercise,
+    doctor_appointment_note: "",
+    accepted: 0,
+    meal_prescribed: null
   };
+
+  try {
+    const response = await fetch(`${apiUrl}/appointments`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newAppointment),
+    });
+
+    if (response.ok) {
+      console.log("Appointment created!");
+      const updated = await fetch(`${apiUrl}/appointmentsupcoming/${patientId}`);
+      const updatedData = await updated.json();
+      setUpcomingAppointments(updatedData);
+      handleCloseBookAppt();
+    }
+  } catch (err) {
+    console.error("Error:", err);
+  }
+};
 
 
   const [doctorInfo, setDoctorInfo] = useState(null);
@@ -1245,7 +1237,7 @@ function Patient_Landing() {
                         </Typography>
                         <TextField
                           fullWidth
-                          placeholder="Type here"
+                          placeholder="a/b"
                           size="small"
 
                           value={bloodPressure}
@@ -1419,28 +1411,28 @@ function Patient_Landing() {
                             <CloseIcon />
                           </IconButton>
                         )}
-                        <Typography
-                          variant="subtitle1"
-                          fontWeight="medium"
-                          sx={{
-                            fontFamily: "Montserrat",
-                            color: "#22252C",
-                            fontSize: "1.8vh",
-                            textAlign: "left",
-                            paddingLeft: "1vw",
-                          }}
-                        >
-                          {new Date(appointment.appointment_datetime).toLocaleString("en-US", {
-                            timeZone: "America/New_York",
-                            year: "numeric",
-                            month: "short",
-                            day: "numeric",
-                            hour: "numeric",
-                            minute: "2-digit",
-                            hour12: true,
-                            timeZoneName: "short"
-                          })}
-                        </Typography>
+                          <Typography
+                            variant="subtitle1"
+                            fontWeight="medium"
+                            sx={{
+                              fontFamily: "Montserrat",
+                              color: "#22252C",
+                              fontSize: "1.8vh",
+                              textAlign: "left",
+                              paddingLeft: "1vw",
+                            }}
+                          >
+                            {new Date(appointment.appointment_datetime).toLocaleString('en-US', {
+                              timeZone: 'America/New_York', // Force EDT display
+                              month: 'short',
+                              day: 'numeric',
+                              year: 'numeric',
+                              hour: 'numeric',
+                              minute: '2-digit',
+                              hour12: true
+                            })}
+                            <span style={{ fontSize: '0.8em', marginLeft: 4 }}>EDT</span>
+                          </Typography>
                         <Typography
                           variant="body1"
                           sx={{
@@ -1808,7 +1800,7 @@ function Patient_Landing() {
                                   fullWidth
                                   value={apptReason}
                                   onChange={(e) => setApptReason(e.target.value)}
-                                  sx={{ mb: 2 }}
+                                  sx={{ mb: 2, }}
                                 />
 
                                 <TextField
@@ -1839,13 +1831,20 @@ function Patient_Landing() {
                                 />
 
                                 <Typography sx={{ fontSize: '0.9em', fontWeight: 'bold' }}>Time</Typography>
-                                <TextField
-                                  type="time"
-                                  fullWidth
-                                  value={selectedTime}
-                                  onChange={(e) => setSelectedTime(e.target.value)}
-                                  sx={{ mb: 2 }}
-                                />
+                                  <TextField
+                                    type="time"
+                                    fullWidth
+                                    value={selectedTime}
+                                    onChange={(e) => setSelectedTime(e.target.value)}
+                                    sx={{ mb: 2 }}
+                                    InputLabelProps={{
+                                      shrink: true,
+                                    }}
+                                    inputProps={{
+                                      step: 900, // 15 minute intervals
+                                    }}
+                                    helperText="All times are in EDT (Eastern Daylight Time)"
+                                  />
 
                                 <Typography sx={{ fontSize: '0.9em', fontStyle: 'italic', mb: 2 }}>
                                   Pharmacy: {pharmacyInfo || "Loading..."}

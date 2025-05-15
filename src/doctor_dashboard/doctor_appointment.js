@@ -15,6 +15,9 @@ import Button from '@mui/material/Button';
 import { useNavigate } from "react-router-dom";
 import Select, { SelectChangeEvent } from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
+import Snackbar from '@mui/material/Snackbar';
+import MuiAlert from '@mui/material/Alert';
+
 
 import { io } from "socket.io-client";
 
@@ -109,6 +112,27 @@ const style = {
 };
 
 function Doctor_Appointment() {
+
+    const [snackOpen, setSnackOpen] = useState(false);
+  const [snackMsg, setSnackMsg] = useState("");
+  const [snackType, setSnackType] = useState("error");
+
+  const showSnack = (msg, type = "error") => {
+    setSnackMsg(msg);
+    setSnackType(type);
+    setSnackOpen(true);
+  };
+      <Snackbar
+        open={snackOpen}
+        autoHideDuration={4000}
+        onClose={() => setSnackOpen(false)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <MuiAlert onClose={() => setSnackOpen(false)} severity={snackType} variant="filled" sx={{ width: '100%' }}>
+          {snackMsg}
+        </MuiAlert>
+      </Snackbar>
+
 
   const location = useLocation();
   const { appointmentId } = location.state || {};
@@ -309,8 +333,48 @@ function Doctor_Appointment() {
     const [hasPrescribed, setHasPrescribed] = useState(false);
 
 
+    //handle creating bill
+    const generateBill = async (apptId) => {
+  try {
+    const res = await fetch(`${apiUrl}/patient/bill`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ appt_id: apptId }),
+    });
 
-    
+    const data = await res.json();
+
+    if (res.ok) {
+      showSnack(`Bill recorded successfully:\nDoctor: $${data.doctor_bill}\nPharmacy: $${data.pharm_bill}\nTotal: $${data.current_bill}`, "success");
+      return true;
+    } else {
+      showSnack(data.error || "Billing failed.");
+      return false;
+    }
+  } catch (err) {
+    console.error("Billing error:", err);
+    showSnack("An error occurred generating the bill.");
+    return false;
+  }
+};
+
+const [mealPlans, setMealPlans] = useState([]);
+const [selectedMealPlan, setSelectedMealPlan] = useState('');
+useEffect(() => {
+  if (open) {
+    const doctorId = localStorage.getItem("doctorId"); // or wherever you're storing it
+    fetch(`${apiUrl}/get-doctor-meal-plans/${doctorId}`)
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          setMealPlans(data);
+        } else {
+          console.error("No meal plans found:", data);
+        }
+      })
+      .catch(err => console.error("Error fetching meal plans:", err));
+  }
+}, [open]);
 
 
     return (
@@ -395,37 +459,113 @@ function Doctor_Appointment() {
                             }
                           }}                        />
                       </div>
+                      <Box>
+                        <Typography id="modal-modal-title" variant="h6" component="h2" color="black">Asign Meal Plan</Typography>
+                        <div className='labels'>
+  <label htmlFor="mealplan" className='gender-label'>Meal Plan: </label>
+  <Select
+    className="form-control-select"
+    value={selectedMealPlan || ''}
+    onChange={(e) => {
+      const selectedId = parseInt(e.target.value);
+      setSelectedMealPlan(selectedId);
+    }}
+    displayEmpty
+    fullWidth
+    renderValue={(selected) => {
+      const plan = mealPlans.find(m => m.meal_plan_id === selected);
+      return plan ? plan.title : "Select Meal Plan";
+    }}
+  
+    MenuProps={{
+    PaperProps: {
+      style: {
+        maxHeight: 250,
+        overflowY: 'auto',
+      },
+    },
+    anchorOrigin: {
+      vertical: 'bottom',
+      horizontal: 'left',
+    },
+    transformOrigin: {
+      vertical: 'top',
+      horizontal: 'left',
+    },
+    getContentAnchorEl: null, // prevents offset bugs in modals
+  }}
+>
+  {mealPlans.map((plan) => (
+    <MenuItem key={plan.meal_plan_id} value={plan.meal_plan_id}>
+      {`${plan.title} (${plan.tag}) - ${plan.made_by}`}
+    </MenuItem>
+  ))}
+  </Select>
+</div>
 
-                      <button
-                        className="patientlogin btn-info"
-                        style={{ background: 'teal' }}
-                        onClick={async () => {
-                          try {
-                            const res = await fetch(`${apiUrl}/request-prescription`, {
-                              method: 'POST',
-                              headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify({
-                                appt_id: appointmentId,
-                                medicine_id: pills,
-                                quantity: parseInt(values.quantity),
-                              }),
-                            });
-                            const data = await res.json();
-                            if (res.ok) {
-                              alert("Prescription submitted successfully!");
-                              setHasPrescribed(true);
-                              handleClose();
-                            } else {
-                              alert(data.error || "Failed to submit prescription.");
-                            }
-                          } catch (err) {
-                            console.error("Prescription error:", err);
-                            alert("An error occurred submitting the prescription.");
-                          }
-                        }}
-                      >
-                        Send
-                      </button>
+                      </Box>
+<button
+  className="patientlogin btn-info"
+  style={{ background: 'teal' }}
+  onClick={async () => {
+    try {
+      // 1. Submit prescription
+      const res = await fetch(`${apiUrl}/request-prescription`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          appt_id: appointmentId,
+          medicine_id: pills,
+          quantity: parseInt(values.quantity),
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        alert(data.error || "Failed to submit prescription.");
+        return;
+      }
+
+      // 2. Save meal plan (if selected)
+      if (selectedMealPlan) {
+        const doctorId = localStorage.getItem("doctor_id"); // or get from props/context
+        const patientId = localStorage.getItem("patient_id"); // optional if applicable
+
+        const mealRes = await fetch(`${apiUrl}/saved-meal-plans`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            meal_plan_id: selectedMealPlan,
+            doctor_id: doctorId ? parseInt(doctorId) : null,
+            patient_id: patientId ? parseInt(patientId) : null,
+          }),
+        });
+
+        const mealData = await mealRes.json();
+        if (!mealRes.ok) {
+          alert(mealData.error || "Failed to save meal plan.");
+          return;
+        }
+      }
+
+      // 3. Generate bill and close modal
+      showSnack("Prescription and meal plan submitted successfully!", "success");
+      const billSuccess = await generateBill(appointmentId);
+      if (billSuccess) {
+        setHasPrescribed(true);
+        handleClose();
+      }
+
+    } catch (err) {
+      console.error("Prescription or meal plan error:", err);
+      alert("An error occurred while submitting.");
+    }
+  }}
+>
+  Send
+</button>
+
                     </Box>
                   </Modal>
 

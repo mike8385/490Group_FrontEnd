@@ -10,6 +10,9 @@ import IconButton from '@mui/material/IconButton';
 import CloseIcon from '@mui/icons-material/Close';
 import MenuItem from '@mui/material/MenuItem';
 import Select, { SelectChangeEvent } from '@mui/material/Select';
+import Snackbar from '@mui/material/Snackbar';
+import MuiAlert from '@mui/material/Alert';
+
 
 
 
@@ -21,34 +24,96 @@ const RoundedPanel = styled(Paper)(({ theme }) => ({
   backgroundColor: '#EEF2FE',
 }));
 
-const MealPlanCard = ({ title, author, tags, onView, onManage }) => (
+const MealPlanCard = ({ title, author, tags, onView, onManage, patientInfo, meal_plan_id, onDelete }) => (
   <Box
     sx={{
-        background: 'linear-gradient(109.86deg, #5889BD 6.67%, #719EC7 34.84%, #99C6DB 93.33%)',
-        borderRadius: '30px',
-        padding: 2,
-        marginBottom: 2,
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
+      background: 'linear-gradient(109.86deg, #5889BD 6.67%, #719EC7 34.84%, #99C6DB 93.33%)',
+      borderRadius: '30px',
+      padding: 2,
+      marginBottom: 2,
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      position: 'relative', // Needed for absolute positioning of delete button
     }}
   >
+    {/* Delete button - only shown if this is the patient's meal plan */}
+    {patientInfo && author.includes(patientInfo.first_name) && (
+      <IconButton
+        onClick={(e) => {
+          e.stopPropagation();
+          onDelete(meal_plan_id);
+        }}
+        sx={{
+          position: 'absolute',
+          top: 8,
+          right: 8,
+          color: 'white',
+          backgroundColor: 'none'
+        }}
+      >
+        <CloseIcon fontSize="small" />
+      </IconButton>
+    )}
+
     <Box>
       <Typography sx={{ fontWeight: '500px', color: 'white', fontFamily: 'Montserrat', fontSize:'1.4em' }}>{title}</Typography>
       <Typography sx={{ color: 'white', fontSize: '0.85em', fontFamily:'merriweather', fontSize:'1.2em', fontWeight: '400px' }}>Made by: {author}</Typography>
       <Typography sx={{ color: 'white', fontSize: '0.85em', fontFamily:'merriweather', fontSize:'1.2em', fontWeight: '400px' }}>Tags: {tags}</Typography>
     </Box>
     <Box display="flex" gap={1}>
-      <Button variant="contained" onClick={onView} sx={{ backgroundColor: '#5A4AA3', fontFamily: 'Montserrat', borderRadius: '30px', textTransform: 'none', fontWeight: '400px', fontSize: '1.3em'}}>View</Button>
-      <Button variant="contained" onClick={onManage} sx={{ backgroundColor: '#5A4AA3', fontFamily: 'Montserrat', borderRadius: '30px', textTransform: 'none', fontWeight: '400px', fontSize: '1.3em' }}>Manage</Button>
+      <Button 
+        variant="contained" 
+        onClick={() => onView(meal_plan_id)}
+        sx={{ backgroundColor: '#5A4AA3', fontFamily: 'Montserrat', borderRadius: '30px', textTransform: 'none', fontWeight: '400px', fontSize: '1.3em'}}
+      >
+        View
+      </Button>
+      
+      {patientInfo && author.includes(patientInfo.first_name) ? (
+        <Button 
+          variant="contained" 
+          onClick={() => onManage(meal_plan_id)}
+          sx={{ 
+            backgroundColor: '#5A4AA3', 
+            fontFamily: 'Montserrat', 
+            borderRadius: '30px', 
+            textTransform: 'none', 
+            fontWeight: '400px', 
+            fontSize: '1.3em' 
+          }}
+        >
+          Manage
+        </Button>
+      ) : (
+        <Button 
+          variant="contained" 
+          disabled
+          sx={{ 
+            backgroundColor: '#5A4AA373',
+            fontFamily: 'Montserrat', 
+            borderRadius: '30px', 
+            textTransform: 'none', 
+            fontWeight: '400px', 
+            fontSize: '1.3em',
+            color: 'white',
+            '&:disabled': {
+              color: 'white'
+            }
+          }}
+        >
+          Manage
+        </Button>
+      )}
     </Box>
   </Box>
 );
 
-const MealCard = ({ title, tags, description, image, day, onAddToPlan}) => {
+
+const MealCard = ({ title, tags, description, image, day, onAddToPlan, meal_id}) => {
         const handleClick = () => {
           if (day) {
-            onAddToPlan({ title, tags, description, image });
+            onAddToPlan({ title, tags, description, image, meal_id});
           }
         };
   return (
@@ -79,7 +144,50 @@ const MealCard = ({ title, tags, description, image, day, onAddToPlan}) => {
   );
 };
 
+
 function Patient_Mealplan() {
+
+    const [snackOpen, setSnackOpen] = useState(false);
+    const [snackMsg, setSnackMsg] = useState("");
+    const [snackType, setSnackType] = useState("error");
+  
+    const showSnack = (msg, type = "error") => {
+      setSnackMsg(msg);
+      setSnackType(type);
+      setSnackOpen(true);
+    };
+
+
+
+
+  const [patientInfo, setPatientInfo] = useState(null);
+  
+  
+    useEffect(() => {
+      const fetchPatientInfo = async () => {
+        const id = localStorage.getItem("patientId");
+        if (!id) {
+          console.warn("No patient ID in localStorage");
+          return;
+        }
+  
+        try {
+          const res = await fetch(`${apiUrl}/patient/${id}`);
+          if (!res.ok) {
+            throw new Error("Failed to fetch patient info");
+          }
+  
+          const data = await res.json();
+          setPatientInfo(data);
+          console.log("Patient info:", data);
+        } catch (error) {
+          console.error("Error fetching patient info:", error);
+        }
+      };
+  
+      fetchPatientInfo();
+    }, []);
+
   // Temporary mock data
   const [mealPlans, setMealPlans] = useState([]);
 
@@ -98,15 +206,15 @@ function Patient_Mealplan() {
       }
       console.log("Successfully got UID", Uid);
       try {
-        const response = await fetch(`${apiUrl}/saved-meal-plans/${id}`);
+        const response = await fetch(`${apiUrl}/get-saved-meal-plans/${id}`);
         
         if (!response.ok) {
           const errorData = await response.json();
           throw new Error(errorData.error || 'Failed to fetch meal plans');
         }
     
-        const { saved_meal_plans } = await response.json();
-        
+        const  saved_meal_plans  = await response.json();
+        console.log(saved_meal_plans);
         if (!saved_meal_plans) {
           throw new Error('No meal plans data received');
         }
@@ -114,8 +222,9 @@ function Patient_Mealplan() {
       // Change this in your fetchMealPlans function:
       setMealPlans(
         saved_meal_plans.map(plan => ({
+          meal_plan_id: plan.meal_plan_id,
           title: plan.title || plan.meal_plan_name,
-          author: plan.creator_name || "Custom", // Use creator_name from backend
+          author: plan.made_by || "Custom", // Use creator_name from backend
           tags: plan.tag || plan.description || "Custom"
         }))
       );
@@ -127,6 +236,41 @@ function Patient_Mealplan() {
     fetchMealPlans();
   }, []);
   
+  // Add this function to your component
+const handleDeleteMealPlan = async (mealPlanId) => {
+  if (window.confirm("Are you sure you want to delete this meal plan?")) {
+    try {
+      const response = await fetch(`${apiUrl}/delete-meal-plan/${mealPlanId}`, {
+        method: 'DELETE',
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to delete meal plan');
+      }
+      
+      // Refresh the meal plans list
+      const id = localStorage.getItem("patientId");
+      const refreshed = await fetch(`${apiUrl}/get-saved-meal-plans/${id}`);
+      const saved_meal_plans = await refreshed.json();
+      
+      setMealPlans(
+        saved_meal_plans.map(plan => ({
+          meal_plan_id: plan.meal_plan_id,
+          title: plan.title || plan.meal_plan_name,
+          author: plan.made_by || "Custom",
+          tags: plan.tag || plan.description || "Custom"
+        }))
+      );
+      
+      showSnack("Meal plan deleted successfully", "success");
+    } catch (error) {
+      console.error("Error deleting meal plan:", error);
+      showSnack("Failed to delete meal plan");
+    }
+  }
+};
+
+
 
   // useEffect(() => {
   //   fetch('http://127.0.0.1:5000/doctors')
@@ -142,39 +286,32 @@ function Patient_Mealplan() {
     const [savedMeals, setSavedMeals] = useState([]);
   
       useEffect(() => {
-      const fetchSavedMeals = async () => {
-      const Uid = localStorage.getItem("userId");
-      if (!Uid) {
-        console.warn("No user ID in localStorage");
-        return;
-      }
-        try {
-          const res = await fetch(`${apiUrl}/posts/save/${Uid}`);
-          if (!res.ok) {
-            throw new Error("Failed to fetch user info");
-          }
-          const  saved_meals  = await res.json();
-
-          if (!saved_meals) {
-          throw new Error('No meal data received');
-        }
-
-        setSavedMeals(
+  const fetchSavedMeals = async () => {
+    const Uid = localStorage.getItem("userId");
+    if (!Uid) return;
+    
+    try {
+      const res = await fetch(`${apiUrl}/posts/save/${Uid}`);
+      if (!res.ok) throw new Error("Failed to fetch saved meals");
+      
+      const saved_meals = await res.json();
+      setSavedMeals(
         saved_meals.map(meal => ({
-          title: meal.meal_name || "Custom",
-          tags: meal.tag || "Custom", // Use creator_name from backend
-          description: meal.description || "Custom",
-          image: meal.picture || food1 // fallback to default image
-
-          
+          //id: meal.meal_id, // This must match your API response
+          meal_id: meal.meal_id, // Include both for compatibility
+          title: meal.meal_name,
+          tags: meal.tag,
+          description: meal.description,
+          image: meal.picture || food1
         }))
       );
-      } catch (error) {
-        console.error("Failed to fetch meal plans:", error);
-      }
-    };
-      fetchSavedMeals();
-    }, []);
+              console.log("Meal Infos", saved_meals);
+    } catch (error) {
+      console.error("Error fetching saved meals:", error);
+    }
+  };
+  fetchSavedMeals();
+}, []);
   // const savedMeals = [
   //   {
   //     title: "Cauliflower Fried Rice",
@@ -206,8 +343,23 @@ function Patient_Mealplan() {
 
   const [openModal, setOpenModal] = useState(false);
 
-    const handleOpenModal = () => setOpenModal(true);
-    const handleCloseModal = () => setOpenModal(false);
+    const handleOpenModal = (mealPlanId) => {
+      // Find the complete meal plan from your mealPlans state
+      const selectedPlan = mealPlans.find(plan => plan.meal_plan_id === mealPlanId);
+      
+      // Set the selected meal plan
+      setSelectedMealPlan(selectedPlan);
+      
+      // Set the ID and open modal
+      setSelectedMealPlanId(mealPlanId);
+      setOpenModal(true);
+      
+      // Fetch meal plan details
+      fetchMealPlanDetails(mealPlanId);
+    };
+
+    
+  const handleCloseModal = () => setOpenModal(false);
 
     const ModalContent = styled(Box)(({ theme }) => ({
         width: '85vw',
@@ -221,16 +373,40 @@ function Patient_Mealplan() {
         alignSelf: 'center'
       }));
       
-      const DayColumn = styled(Box)(({ theme }) => ({
-        flex: 1,
-        background: 'linear-gradient(180deg, #5889BD, #99C6DB)',
-        borderRadius: '20px',
-        padding: '1vh 0.5vw',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        gap: '1vh',
-      }));
+    const DayColumn = styled(Box)(({ theme }) => ({
+      flex: 1,
+      background: 'linear-gradient(180deg, #5889BD, #99C6DB)',
+      borderRadius: '20px',
+      padding: '1vh 0.5vw',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      gap: '1vh',
+      maxHeight: '70vh',
+      overflowY: 'auto',
+
+      // Scrollbar styles for WebKit (Chrome, Edge, Safari)
+      '&::-webkit-scrollbar': {
+        width: '8px',
+      },
+      '&::-webkit-scrollbar-track': {
+        background: 'transparent',
+        borderRadius: '10px',
+      },
+      '&::-webkit-scrollbar-thumb': {
+        backgroundColor: '#316B9D',
+        borderRadius: '10px',
+        border: '2px solid transparent',
+        backgroundClip: 'content-box',
+      },
+
+      // Scrollbar for Firefox
+      scrollbarWidth: 'thin',                // Firefox
+      scrollbarColor: '#316B9D transparent', // Firefox
+    }));
+
+
+
       
       const MealThumbnail = ({ title, src }) => (
         <Box sx={{ textAlign: 'center' }}>
@@ -251,9 +427,21 @@ function Patient_Mealplan() {
 
     const handleAddToPlan = (meal) => {
       if (!day) return;
-    
+      
+      const mealId = meal.meal_id;
+      if (!mealId) {
+        console.error("Meal ID is missing", meal);
+        return;
+      }
+
       setPlannedMeals(prev => {
-        const updatedDayMeals = prev[day] ? [...prev[day], meal] : [meal];
+        const updatedDayMeals = prev[day] ? [...prev[day], {
+          ...meal,
+          meal_id: mealId // Make sure this matches your meal object structure
+        }] : [{
+          ...meal,
+          meal_id: mealId
+        }];
         return { ...prev, [day]: updatedDayMeals };
       });
     };
@@ -294,7 +482,7 @@ const handleSaveNew = async () => {
   try {
     const patientId = localStorage.getItem("patientId");
     if (!patientId) {
-      alert("No patient ID found");
+      showSnack("No patient ID found");
       return;
     }
 
@@ -311,41 +499,181 @@ const handleSaveNew = async () => {
     if (!response.ok) throw new Error('Failed to create meal plan');
 
     // Refresh meal plans with the correct patient ID
-    const refreshed = await fetch(`${apiUrl}/saved-meal-plans/${patientId}`);
-    const { saved_meal_plans } = await refreshed.json();
+    const refreshed = await fetch(`${apiUrl}/get-saved-meal-plans/${patientId}`);
+    const  saved_meal_plans  = await refreshed.json();
         
     setMealPlans(
       saved_meal_plans.map(plan => ({
+        meal_plan_id: plan.meal_plan_id,
         title: plan.title || plan.meal_plan_name,
-        author: plan.creator_name || "Custom", // Use creator_name from backend
+        author: plan.made_by || "Custom", // Use creator_name from backend
         tags: plan.tag || plan.description || "Custom"
       }))
     );
 
-    alert("Meal plan created successfully!");
+    showSnack("Meal plan created successfully!", "success");
     setTitle("");
     handleCloseNewPlanModal();
   } catch (error) {
     console.error("Meal plan creation failed:", error);
-    alert("Could not create meal plan.");
+    showSnack("Could not create meal plan.");
   }
 };
 
+  const [selectedMealPlanId, setSelectedMealPlanId] = useState(null);
+  const [selectedMealPlanDetails, setSelectedMealPlanDetails] = useState(null);
+  
+
+const fetchMealPlanDetails = async (mealPlanId) => {
+  try {
+    const response = await fetch(`${apiUrl}/meal-plan-entries?meal_plan_id=${mealPlanId}`);
+    if (!response.ok) {
+      throw new Error("Failed to fetch meal plan details");
+    }
+    const data = await response.json();
+    console.log("API Response:", data);
+    
+    // Initialize empty days
+    const mealsByDay = {
+      Monday: [],
+      Tuesday: [],
+      Wednesday: [],
+      Thursday: [],
+      Friday: [],
+      Saturday: [],
+      Sunday: []
+    };
+    
+    // Also prepare initial plannedMeals state
+    const initialPlannedMeals = {};
+    
+    // Group meals by day
+    data.forEach(meal => {
+      if (meal.day_of_week && mealsByDay[meal.day_of_week]) {
+        mealsByDay[meal.day_of_week].push({
+          ...meal,
+          title: meal.meal_name,
+          image: meal.image || food1
+        });
+        
+        // Populate initial plannedMeals
+        if (!initialPlannedMeals[meal.day_of_week]) {
+          initialPlannedMeals[meal.day_of_week] = [];
+        }
+        initialPlannedMeals[meal.day_of_week].push({
+          ...meal,
+          title: meal.meal_name,
+          meal_id: meal.meal_id,
+          image: meal.image || food1
+        });
+      }
+    });
+    
+    console.log("Grouped meals:", mealsByDay);
+    console.log("Initial planned meals:", initialPlannedMeals);
+    
+    setSelectedMealPlanDetails(mealsByDay);
+    return initialPlannedMeals;
+  } catch (error) {
+    console.error("Error fetching meal plan details:", error);
+    setSelectedMealPlanDetails({
+      Monday: [],
+      Tuesday: [],
+      Wednesday: [],
+      Thursday: [],
+      Friday: [],
+      Saturday: [],
+      Sunday: []
+    });
+    return {};
+  }
+};
+
+
   const [selectedOption, setSelectedOption] = useState(""); // ✅ Add this line
 
-  const [mealsDay, setMealsDay] = useState([]);
+  // const [mealsDay, setMealsDay] = useState([]);
 
-  useEffect(() => {
-    fetch('http://127.0.0.1:5000/doctors/meal-plan-entries')
-      .then(response => response.json())
-      .then(data => {
-        setMealsDay(data);
-        console.log("Data:", data);
-      })
-      .catch(error => {
-        console.error("Error fetching doctor data:", error);
+  // useEffect(() => {
+  //   fetch('http://127.0.0.1:5000/doctors/meal-plan-entries')
+  //     .then(response => response.json())
+  //     .then(data => {
+  //       setMealsDay(data);
+  //       console.log("Data:", data);
+  //     })
+  //     .catch(error => {
+  //       console.error("Error fetching doctor data:", error);
+  //     });
+  // }, [])
+
+
+const [isSaving, setIsSaving] = useState(false);
+
+
+const handleSaveMealPlan = async () => {
+  setIsSaving(true);
+  try {
+    if (!selectedMealPlan?.meal_plan_id) {
+      showSnack("No meal plan selected");
+      return;
+    }
+
+    // 1. First get ALL current assignments from the backend
+    const currentAssignments = await fetchMealPlanDetails(selectedMealPlan.meal_plan_id);
+    
+    // 2. Prepare updates - compare current with plannedMeals
+    const updates = [];
+    const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    
+    daysOfWeek.forEach(day => {
+      const currentMeals = currentAssignments[day] || [];
+      const newMeals = plannedMeals[day] || [];
+      
+      // Check if meals have changed for this day
+      if (JSON.stringify(currentMeals) !== JSON.stringify(newMeals)) {
+        updates.push({
+          day,
+          meals: newMeals
+        });
+      }
+    });
+
+    // 3. Process updates
+    const savePromises = updates.map(async ({day, meals}) => {
+      // First clear existing meals for this day
+      await fetch(`${apiUrl}/clear-meals`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          meal_plan_id: selectedMealPlan.meal_plan_id,
+          day_of_week: day
+        })
       });
-  }, [])
+      
+      // Then add new meals
+      return Promise.all(meals.map(meal => 
+        fetch(`${apiUrl}/assign-meal`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            meal_plan_id: selectedMealPlan.meal_plan_id,
+            meal_id: meal.meal_id,
+            day_of_week: day
+          })
+        })
+      ));
+    });
+
+    await Promise.all(savePromises);
+    
+    showSnack("Meal plan saved successfully!", "success");
+  } catch (error) {
+    console.error("Error saving meal plan:", error);
+    showSnack(`Could not save meal plan: ${error.message}`);
+  } finally {
+    setIsSaving(false);
+  }
+};
 
 
 
@@ -414,16 +742,16 @@ const handleSaveNew = async () => {
                           <MenuItem value="" disabled>
                             Select Tag
                           </MenuItem>
-                          <MenuItem value="Low_Carb">Low Carb</MenuItem>
+                          <MenuItem value="Low Carb">Low Carb</MenuItem>
                           <MenuItem value="Keto">Keto</MenuItem>
                           <MenuItem value="Paleo">Paleo</MenuItem>
                           <MenuItem value="Mediterranean">Mediterranean</MenuItem>
                           <MenuItem value="Vegan">Vegan</MenuItem>
                           <MenuItem value="Vegetarian">Vegetarian</MenuItem>
-                          <MenuItem value="Gluten_Free">Gluten-Free</MenuItem>
-                          <MenuItem value="Dairy_Free">Dairy-Free</MenuItem>
-                          <MenuItem value="Weight_Loss">Weight Loss</MenuItem>
-                          <MenuItem value="Weight_Gain">Weight Gain</MenuItem>
+                          <MenuItem value="Gluten Free">Gluten-Free</MenuItem>
+                          <MenuItem value="Dairy-Free">Dairy-Free</MenuItem>
+                          <MenuItem value="Weight Loss">Weight Loss</MenuItem>
+                          <MenuItem value="Weight Gain">Weight Gain</MenuItem>
                           <MenuItem value="Other">Other</MenuItem>
                         </TextField>
                         
@@ -446,11 +774,28 @@ const handleSaveNew = async () => {
                   </Modal>
 
                 </Box>
-                <Box className = 'custom-scroll' sx={{height: '70vh',overflowY: 'auto', paddingRight: '.5vw'}}>
-                {mealPlans.map((plan, index) => (
-                  <MealPlanCard key={index} {...plan} onView={handleOpenModal} onManage={() => {setSelectedMealPlan(plan); setManage(true);}} />
-                ))}
-                </Box>
+                  <Box className='custom-scroll' sx={{height: '70vh',overflowY: 'auto', paddingRight: '.5vw'}}>
+                    {mealPlans.map((plan, index) => (
+                      <MealPlanCard 
+                        key={index} 
+                        {...plan} 
+                        meal_plan_id={plan.meal_plan_id} // Make sure this is the correct ID property from your data
+                        patientInfo={patientInfo}
+                        onView={handleOpenModal} // This will now receive the id
+                          onManage={async (meal_plan_id) => {
+                            const plan = mealPlans.find(p => p.meal_plan_id === meal_plan_id);
+                            setSelectedMealPlan({...plan, meal_plan_id});
+                            
+                            // Load ALL meals for all days
+                            const allMeals = await fetchMealPlanDetails(meal_plan_id);
+                            setPlannedMeals(allMeals);
+                            
+                            setManage(true);
+                          }}
+                              onDelete={handleDeleteMealPlan} // Add this line
+                      />
+                    ))}
+                  </Box>
               </RoundedPanel>
             ) : (
                 <RoundedPanel sx={{ display: 'flex', flexDirection: 'column' }}>
@@ -475,8 +820,22 @@ const handleSaveNew = async () => {
                       Made by: {selectedMealPlan?.author} | Tags: {selectedMealPlan?.tags}
                     </Typography>
                   </Box>
-                  <Button variant="contained" sx={{ backgroundColor: '#5A4AA3', marginTop: 1, borderRadius: '30px', textTransform: 'none', fontSize: '1em', fontWeight:'bold', minWidth: '150px'}}>Save</Button>
-                </Box>
+                    <Button 
+                      variant="contained" 
+                      onClick={handleSaveMealPlan}
+                      sx={{ 
+                        backgroundColor: '#5A4AA3', 
+                        marginTop: 1, 
+                        borderRadius: '30px', 
+                        textTransform: 'none', 
+                        fontSize: '1em', 
+                        fontWeight:'bold', 
+                        minWidth: '150px'
+                      }}
+                    >
+                      Save
+                    </Button>                
+                  </Box>
                 
                 {!day ? (
                 <Box mt={2} display="flex" justifyContent="space-between" alignItems="center">
@@ -583,28 +942,36 @@ const handleSaveNew = async () => {
                                   >
                                     Go to Meal
                                   </Button>
-                                  <Button
-                                    size="small"
-                                    variant="contained"
-                                    onClick={() => {
-                                      setPlannedMeals(prev => {
-                                        const filtered = prev[day].filter((_, i) => i !== idx);
-                                        return { ...prev, [day]: filtered };
-                                      });
-                                    }}
-                                    sx={{
-                                      backgroundColor: '#5A8BBE',
-                                      borderRadius: '20px',
-                                      textTransform: 'none',
-                                      fontWeight: 'bold',
-                                      fontFamily: 'Montserrat',
-                                      '&:hover': {
-                                        backgroundColor: '#4B79A8'
-                                      }
-                                    }}
-                                  >
-                                    Remove
-                                  </Button>
+                                    <Button
+                                      size="small"
+                                      variant="contained"
+                                      onClick={() => {
+                                        // Create a new object without the meal we're removing
+                                        const updatedMeals = {
+                                          ...plannedMeals,
+                                          [day]: plannedMeals[day].filter((_, i) => i !== idx)
+                                        };
+                                        
+                                        // If this was the last meal for the day, remove the day entirely
+                                        if (updatedMeals[day].length === 0) {
+                                          delete updatedMeals[day];
+                                        }
+                                        
+                                        setPlannedMeals(updatedMeals);
+                                      }}
+                                      sx={{
+                                        backgroundColor: '#5A8BBE',
+                                        borderRadius: '20px',
+                                        textTransform: 'none',
+                                        fontWeight: 'bold',
+                                        fontFamily: 'Montserrat',
+                                        '&:hover': {
+                                          backgroundColor: '#4B79A8'
+                                        }
+                                      }}
+                                    >
+                                      Remove
+                                    </Button>
                                 </Box>
 
                               </Box>
@@ -620,42 +987,70 @@ const handleSaveNew = async () => {
             <Typography variant="h6" sx={{ color: 'white', mb: 2, fontSize: '2em'}}>Saved Meals</Typography>
             <Box className = 'custom-scroll' sx={{height: '70vh', overflowY: 'auto', paddingRight: '.5vw'}}>
             {savedMeals.map((meal, index) => (
-              <MealCard key={index} {...meal} day={day} onAddToPlan={handleAddToPlan}/>
+              <MealCard 
+                key={index} 
+                meal_id={meal.meal_id}
+                title={meal.title}
+                tags={meal.tags}
+                description={meal.description}
+                image={meal.image}
+                day={day}
+                onAddToPlan={handleAddToPlan}
+              />
             ))}
+            
             </Box>
           </RoundedPanel>
         </Box>
-        <Modal open={openModal} onClose={handleCloseModal} sx={{
+<Modal open={openModal} onClose={handleCloseModal} sx={{
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-  }}>
-            <ModalContent>
-                <Box display="flex" justifyContent="space-between" alignItems="center">
-                <Typography variant="h5" sx={{ fontFamily: 'Montserrat', fontSize: '2em' }}>Meal Plan #1</Typography>
-                <IconButton onClick={handleCloseModal}>
-                    <CloseIcon />
-                </IconButton>
-                </Box>
-
-                <Box display="flex" justifyContent="space-between" gap={2} mt={4} sx={{ flexGrow: 1 }}>
-                {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"].map((day, i) => (
-                    <DayColumn key={day}>
-                    <Typography sx={{ fontWeight: '500', fontFamily: 'Montserrat', fontSize: '1.5em' }}>{day}</Typography>
-                    {day === "Thursday" && (
-                        <>
-                        <MealThumbnail title="Cauliflower Fried Rice" src={food1} />
-                        <MealThumbnail title="Cheesy Broccoli Cheddar Spaghetti Squash" src={food1} />
-                        </>
-                    )}
-                    </DayColumn>
-                ))}
-                </Box>
-            </ModalContent>
-        </Modal>
+}}>
+    <ModalContent>
+      <Box display="flex" justifyContent="space-between" alignItems="center">
+        <Typography variant="h5" sx={{ fontFamily: 'Montserrat', fontSize: '2em' }}>
+          {selectedMealPlan?.title || `Meal Plan #${selectedMealPlanId}`}
+        </Typography>
+        <IconButton onClick={handleCloseModal}>
+          <CloseIcon />
+        </IconButton>
       </Box>
+
+      <Box display="flex" justifyContent="space-between" gap={2} mt={4} sx={{ flexGrow: 1 }}>
+        {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"].map((day) => (
+          <DayColumn key={day} >
+            <Typography sx={{ fontWeight: '500', fontFamily: 'Montserrat', fontSize: '1.5em' }}>
+              {day}
+            </Typography>
+            {selectedMealPlanDetails && selectedMealPlanDetails[day]?.map((meal, index) => (
+              <MealThumbnail 
+                key={`${day}-${index}`} 
+                title={meal.meal_name} 
+                src={meal.image || food1}
+              />
+            ))}
+          </DayColumn>
+        ))}
+      </Box>
+    </ModalContent>
+</Modal>
+      </Box>
+
+      <Snackbar
+        open={snackOpen}
+        autoHideDuration={4000}
+        onClose={() => setSnackOpen(false)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <MuiAlert onClose={() => setSnackOpen(false)} severity={snackType} variant="filled" sx={{ width: '100%' }}>
+          {snackMsg}
+        </MuiAlert>
+      </Snackbar>
+
     </div>
   );
 }
 
 export default Patient_Mealplan;
+

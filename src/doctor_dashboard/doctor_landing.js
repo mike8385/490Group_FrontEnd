@@ -31,6 +31,9 @@ import doctor_happy from "./doctor_happy.png"
 import patient_help from "./patient_help.png"
 import { useTheme, useMediaQuery, Drawer } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu'
+import Snackbar from '@mui/material/Snackbar';
+import MuiAlert from '@mui/material/Alert';
+
 const apiUrl = process.env.REACT_APP_API_URL;
 
 
@@ -62,6 +65,26 @@ const StyledRating = styled(Rating)({
 
 
 function Doctor_Landing() {
+
+  const [snackOpen, setSnackOpen] = useState(false);
+  const [snackMsg, setSnackMsg] = useState("");
+  const [snackType, setSnackType] = useState("error");
+
+  const showSnack = (msg, type = "error") => {
+    setSnackMsg(msg);
+    setSnackType(type);
+    setSnackOpen(true);
+  };
+      <Snackbar
+        open={snackOpen}
+        autoHideDuration={4000}
+        onClose={() => setSnackOpen(false)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <MuiAlert onClose={() => setSnackOpen(false)} severity={snackType} variant="filled" sx={{ width: '100%' }}>
+          {snackMsg}
+        </MuiAlert>
+      </Snackbar>
 
   const [doctorInfo, setDoctorInfo] = useState(null);
 
@@ -97,6 +120,31 @@ function Doctor_Landing() {
       setToggleStatus(doctorInfo.accepting_patients == 1);
     }
   }, [doctorInfo]);
+
+    const [userInfo, setUserInfo] = useState(null);
+  
+      useEffect(() => {
+      const fetchUserInfo = async () => {
+        const id = localStorage.getItem("doctorId");
+        if (!id) {
+          console.warn("No patient ID in localStorage");
+          return;
+        }
+        try {
+          const res = await fetch(`${apiUrl}/user?doctor_id=${id}`);
+          if (!res.ok) {
+            throw new Error("Failed to fetch user info");
+          }
+          const data = await res.json();
+          setUserInfo(data);
+          console.log("User ID", data);
+          localStorage.setItem("userId", data.user_id);
+        } catch (error) {
+          console.error("Error fetching user info:", error);
+        }
+      };
+      fetchUserInfo();
+    }, []);
 
 
 
@@ -519,11 +567,11 @@ function Doctor_Landing() {
         setToggleStatus(newStatus === 1); // update local state
         console.log("Doctor status updated");
       } else {
-        alert(data.error || "Failed to update status");
+        showSnack(data.error || "Failed to update status");
       }
     } catch (error) {
       console.error("Status update error:", error);
-      alert("An error occurred. Please try again.");
+      showSnack("An error occurred. Please try again.");
     }
   };
 

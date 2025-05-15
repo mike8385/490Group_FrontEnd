@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
 import "./landing.css";
 import heroImage from "./assets/heroimage.png";
-import patient1 from "./assets/patient1.png";
-import patient2 from "./assets/patient2.png";
-import patient3 from "./assets/patient3.png";
+import patient1 from "./assets/mike.png";
+import patient2 from "./assets/jenna.png";
+import patient3 from "./assets/cassie.png";
 
 import doctor1 from "./assets/doctor1.png";
 import doctor2 from "./assets/doctor2.png";
@@ -33,6 +33,7 @@ import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import Snackbar from '@mui/material/Snackbar';
 import MuiAlert from '@mui/material/Alert';
+
 const apiUrl = process.env.REACT_APP_API_URL;
 
 const copyToClipboard = (text) => {
@@ -123,6 +124,8 @@ function Landing() {
     setSnackOpen(true);
   };
 
+  
+
 
 
   useEffect(() => {
@@ -189,6 +192,7 @@ function Landing() {
           console.log("Patient ID returned from backend:", data.patient_id); // ✅ debug line
           localStorage.setItem("patientId", data.patient_id);
           localStorage.removeItem("doctorId");
+          localStorage.removeItem("userId");
 
           // Redirect to dashboard
           navigate("/patient_dashboard/patient_landing");
@@ -297,8 +301,8 @@ const stories = [
   {
     title: "Health Discipline",
     image: patient1,
-    short: `"Three years ago, I could barely walk up a flight of stairs without gasping for air. I was borderline diabetic, Read more..."`,
-    full: `"Three years ago, I could barely walk up a flight of stairs without gasping for air. I was borderline diabetic, severely overweight, and emotionally drained. I had tried every crash diet imaginable, from keto to juice cleanses, but nothing ever lasted. Then a friend told me about this clinic — how their doctors focused on sustainable meal plans tailored to your lifestyle. From the very first consultation, I felt heard. My nutritionist helped me replace shame with structure. They built me a custom plan that didn't just include what to eat, but when and why. Within six months, I had lost 40 pounds and had energy I hadn't felt in years. A year later, I ran my first 5K. I still follow the meal plan today — it's become second nature. I regained my health, my joy, and most importantly, my hope."`
+    short: `"I used to be heavily overweight and it sucked. Now after a few appointments I was able to get my life together. I even donated $100M."`,
+    full: `"I used to be heavily overweight and it sucked. Now after a few appointments I was able to get my life together. I even donated $100M."`
   },
   {
     title: "Health to Wealth",
@@ -395,70 +399,70 @@ const stories = [
                             }}>
                                   Patient 
                             </Button>
-<Modal
-  open={openPatientLogin}
-  onClose={handleClosePatientLogin}
-  aria-labelledby="modal-modal-title"
-  aria-describedby="modal-modal-description"
->
-  <Box sx={{
-    ...style,
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '20px',
-    borderRadius: '23px',
-    padding: '30px'
-  }}>
-    <Typography id="modal-modal-title" variant="h6" component="h2" color="black" sx={{ textAlign: 'center' }}>
-      Patient Login
-    </Typography>
-    
-    {/* Email Field */}
-    <div className='labels'>
-      <label className='input-group' htmlFor="email">
-        Email:
-        <input
-          type='text'
-          name='email'
-          className="input-field" 
-          placeholder='Enter Email'
-          value={values.email}
-          onChange={e => setValues({...values, email: e.target.value})}
-          style={{ width: '100%', padding: '8px 12px', boxSizing: 'border-box' }}
-        />
-      </label>
-    </div>
-    
-    {/* Password Field */}
-    <div className='labels'>
-      <label className='input-group' htmlFor="password">
-        Password:
-        <input
-          type='password'
-          name='password'
-          className="input-field" 
-          placeholder='Enter Password'
-          value={values.password}
-          onChange={e => setValues({...values, password: e.target.value})}
-          style={{ width: '100%', padding: '8px 12px', boxSizing: 'border-box' }}
-        />
-      </label>
-    </div>
-    
-    <Button 
-      variant="contained" 
-      onClick={() => handleLogin(values.email, values.password)}
-      sx={{
-        width: '100%',
-        borderRadius: '23px',
-        py: 1.5,
-        backgroundColor: '#5C8CC6',
-        '&:hover': { backgroundColor: '#4A76A8' },
-        marginTop: '20px'
-      }}
-    >
-      Login
-    </Button>
+                              <Modal
+                                open={openPatientLogin}
+                                onClose={handleClosePatientLogin}
+                                aria-labelledby="modal-modal-title"
+                                aria-describedby="modal-modal-description"
+                              >
+                                <Box sx={{
+                                  ...style,
+                                  display: 'flex',
+                                  flexDirection: 'column',
+                                  gap: '20px',
+                                  borderRadius: '23px',
+                                  padding: '30px'
+                                }}>
+                                  <Typography id="modal-modal-title" variant="h6" component="h2" color="black" sx={{ textAlign: 'center' }}>
+                                    Patient Login
+                                  </Typography>
+                                  
+                                  {/* Email Field */}
+                                  <div className='labels'>
+                                    <label className='input-group' htmlFor="email">
+                                      Email:
+                                      <input
+                                        type='text'
+                                        name='email'
+                                        className="input-field" 
+                                        placeholder='Enter Email'
+                                        value={values.email}
+                                        onChange={e => setValues({...values, email: e.target.value})}
+                                        style={{ width: '100%', padding: '8px 12px', boxSizing: 'border-box' }}
+                                      />
+                                    </label>
+                                  </div>
+                                  
+                                  {/* Password Field */}
+                                  <div className='labels'>
+                                    <label className='input-group' htmlFor="password">
+                                      Password:
+                                      <input
+                                        type='password'
+                                        name='password'
+                                        className="input-field" 
+                                        placeholder='Enter Password'
+                                        value={values.password}
+                                        onChange={e => setValues({...values, password: e.target.value})}
+                                        style={{ width: '100%', padding: '8px 12px', boxSizing: 'border-box' }}
+                                      />
+                                    </label>
+                                  </div>
+                                  
+                                  <Button 
+                                    variant="contained" 
+                                    onClick={() => handleLogin(values.email, values.password)}
+                                    sx={{
+                                      width: '100%',
+                                      borderRadius: '23px',
+                                      py: 1.5,
+                                      backgroundColor: '#5C8CC6',
+                                      '&:hover': { backgroundColor: '#4A76A8' },
+                                      marginTop: '20px'
+                                    }}
+                                  >
+                                    Login
+                                  </Button>
                                     </Box>
                                   </Modal>
                                   
@@ -1006,6 +1010,8 @@ const stories = [
         </Typography>
       </Container>
     </Box>
+
+
 
       <Snackbar
         open={snackOpen}
