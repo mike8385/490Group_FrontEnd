@@ -69,31 +69,31 @@ function Doctorsignup() {
 
   const [uploadedFileName, setUploadedFileName] = React.useState('');
 
-const handleFileUpload = (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
 
-  // Validate file type and size
-  if (!file.type.match('image.*')) {
-    showSnack('Please upload an image file (JPEG, PNG, etc.)');
-    return;
-  }
+  const handleFileUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
 
-  if (file.size > 2 * 1024 * 1024) {
-    showSnack('Image must be smaller than 2MB');
-    return;
-  }
+    // Validate file type and size
+    if (!file.type.match('image.*')) {
+      showSnack('Please upload an image file (JPEG, PNG, etc.)');
+      return;
+    }
 
-  setUploadedFileName(file.name);
-  const reader = new FileReader();
-  reader.onloadend = () => {
-    const result = reader.result;
-    // Extract just the base64 portion
-    const base64Data = result.split(',')[1];
-    setValues({...values, doctor_picture: base64Data});
+    if (file.size > 2 * 1024 * 1024) {
+      showSnack('Image must be smaller than 2MB');
+      return;
+    }
+
+    setUploadedFileName(file.name);
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      // Save the full data URL for preview and upload convenience
+      setValues({...values, doctor_picture: reader.result});
+    };
+    reader.readAsDataURL(file);
   };
-  reader.readAsDataURL(file);
-};
+
 
   const showSnack = (msg, type = "error") => {
     setSnackMsg(msg);
@@ -222,34 +222,39 @@ const handleFileUpload = (e) => {
 
     setLoading(true);
   
-    const fullData = {
-      first_name: values.first_name,
-      last_name: values.last_name,
-      email: values.email,
-      password: values.password,
-      description: "",
-      license_num: values.license_num,
-      license_exp_date: values.license_exp_date,
-      dob: values.dob,
-      med_school: values.med_school,
-      years_of_practice: values.years_of_practice,
-      specialty: values.specialty,
-      payment_fee: values.payment_fee,
-      gender: values.gender,
-      phone_number: values.phone,
-      address: values.address,
-      zipcode: values.zip,
-      city: values.city,
-      state: values.state,
-      doctor_picture: values.doctor_picture || defaultAvatar
-    };
+    const formData = new FormData();
+
+    // Append all fields
+    formData.append("first_name", values.first_name);
+    formData.append("last_name", values.last_name);
+    formData.append("email", values.email);
+    formData.append("password", values.password);
+    formData.append("description", "");  // if you want an empty string
+
+    formData.append("license_num", values.license_num);
+    formData.append("license_exp_date", values.license_exp_date);
+    formData.append("dob", values.dob);
+    formData.append("med_school", values.med_school);
+    formData.append("years_of_practice", values.years_of_practice);
+    formData.append("specialty", values.specialty);
+    formData.append("payment_fee", values.payment_fee);
+    formData.append("gender", values.gender);
+    formData.append("phone_number", values.phone);
+    formData.append("address", values.address);
+    formData.append("zipcode", values.zip);
+    formData.append("city", values.city);
+    formData.append("state", values.state);
+
+    // Append doctor_picture file only if it exists and is a File
+    if (values.doctor_picture) {
+      formData.append("doctor_picture", values.doctor_picture);
+    }
+
     
     fetch(`${apiUrl}/register-doctor`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(fullData)
+      body: formData, // send FormData, not JSON.stringify
+      // IMPORTANT: Do NOT set Content-Type header — browser sets it automatically for multipart/form-data
     })
       .then(res => res.json())
       .then(response => {
@@ -260,13 +265,13 @@ const handleFileUpload = (e) => {
           throw new Error(response.error || "Something went wrong");
         }
       })
-      .catch(async (error) => {
+      .catch(error => {
         const errMsg = error?.message || "Couldn't create user, please double check the fields and try again.";
         showSnack(errMsg);
         console.error("Error:", errMsg);
       })
       .finally(() => setLoading(false));
-  };
+    };
 
   return (
     <>
