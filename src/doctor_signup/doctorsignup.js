@@ -1,21 +1,17 @@
-import React, { lazy, useEffect, useState } from 'react';
+import React, {useState } from 'react';
 import { useNavigate } from "react-router-dom";
 import "./doctorsignup.css";
 import Checkbox from '@mui/material/Checkbox';
-import { Table, TableRow } from '@mui/material';
 import Button from '@mui/material/Button';
 import Box from '@mui/material/Box';
-import InputLabel from '@mui/material/InputLabel';
 import MenuItem from '@mui/material/MenuItem';
-import FormControl from '@mui/material/FormControl';
-import Select, { SelectChangeEvent } from '@mui/material/Select';
+import Select from '@mui/material/Select';
 import Modal from '@mui/material/Modal'; 
 import Typography from '@mui/material/Typography';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import Snackbar from '@mui/material/Snackbar';
 import MuiAlert from '@mui/material/Alert';
-import defaultAvatar from "../doctor_dashboard/doctorim/doctor1.png"; // Default avatar image
 
 
 const apiUrl = process.env.REACT_APP_API_URL;
@@ -65,35 +61,36 @@ function Doctorsignup() {
   const [snackOpen, setSnackOpen] = useState(false);
   const [snackMsg, setSnackMsg] = useState("");
   const [snackType, setSnackType] = useState("error");
-  const [imageBase64, setImageBase64] = useState('');
 
   const [uploadedFileName, setUploadedFileName] = React.useState('');
+  const [previewUrl, setPreviewUrl] = useState('');
 
-const handleFileUpload = (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
 
-  // Validate file type and size
-  if (!file.type.match('image.*')) {
-    showSnack('Please upload an image file (JPEG, PNG, etc.)');
-    return;
-  }
+  const handleFileUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
 
-  if (file.size > 2 * 1024 * 1024) {
-    showSnack('Image must be smaller than 2MB');
-    return;
-  }
+    if (!file.type.match('image.*')) {
+      showSnack('Please upload an image file (JPEG, PNG, etc.)');
+      return;
+    }
 
-  setUploadedFileName(file.name);
-  const reader = new FileReader();
-  reader.onloadend = () => {
-    const result = reader.result;
-    // Extract just the base64 portion
-    const base64Data = result.split(',')[1];
-    setValues({...values, doctor_picture: base64Data});
+    if (file.size > 2 * 1024 * 1024) {
+      showSnack('Image must be smaller than 2MB');
+      return;
+    }
+
+    setUploadedFileName(file.name);
+
+    // ✅ Just save the File object itself
+    setValues({...values, doctor_picture: file});
+
+    const preview = URL.createObjectURL(file);
+    setPreviewUrl(preview);
   };
-  reader.readAsDataURL(file);
-};
+
+
+
 
   const showSnack = (msg, type = "error") => {
     setSnackMsg(msg);
@@ -222,34 +219,40 @@ const handleFileUpload = (e) => {
 
     setLoading(true);
   
-    const fullData = {
-      first_name: values.first_name,
-      last_name: values.last_name,
-      email: values.email,
-      password: values.password,
-      description: "",
-      license_num: values.license_num,
-      license_exp_date: values.license_exp_date,
-      dob: values.dob,
-      med_school: values.med_school,
-      years_of_practice: values.years_of_practice,
-      specialty: values.specialty,
-      payment_fee: values.payment_fee,
-      gender: values.gender,
-      phone_number: values.phone,
-      address: values.address,
-      zipcode: values.zip,
-      city: values.city,
-      state: values.state,
-      doctor_picture: values.doctor_picture || defaultAvatar
-    };
+    const formData = new FormData();
+
+    // Append all fields
+    formData.append("first_name", values.first_name);
+    formData.append("last_name", values.last_name);
+    formData.append("email", values.email);
+    formData.append("password", values.password);
+    formData.append("description", "");  // if you want an empty string
+
+    formData.append("license_num", values.license_num);
+    formData.append("license_exp_date", values.license_exp_date);
+    formData.append("dob", values.dob);
+    formData.append("med_school", values.med_school);
+    formData.append("years_of_practice", values.years_of_practice);
+    formData.append("specialty", values.specialty);
+    formData.append("payment_fee", values.payment_fee);
+    formData.append("gender", values.gender);
+    formData.append("phone_number", values.phone);
+    formData.append("address", values.address);
+    formData.append("zipcode", values.zip);
+    formData.append("city", values.city);
+    formData.append("state", values.state);
+
+    // Append doctor_picture file only if it exists and is a File
+    if (values.doctor_picture) {
+      console.log("appended")
+      formData.append("doctor_picture", values.doctor_picture);
+    }
+
     
     fetch(`${apiUrl}/register-doctor`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(fullData)
+      body: formData, // send FormData, not JSON.stringify
+      // IMPORTANT: Do NOT set Content-Type header — browser sets it automatically for multipart/form-data
     })
       .then(res => res.json())
       .then(response => {
@@ -260,13 +263,13 @@ const handleFileUpload = (e) => {
           throw new Error(response.error || "Something went wrong");
         }
       })
-      .catch(async (error) => {
+      .catch(error => {
         const errMsg = error?.message || "Couldn't create user, please double check the fields and try again.";
         showSnack(errMsg);
         console.error("Error:", errMsg);
       })
       .finally(() => setLoading(false));
-  };
+    };
 
   return (
     <>
@@ -680,20 +683,16 @@ const handleFileUpload = (e) => {
                           </Button>
 
                           {/* File name shown to the right of button */}
-                          {values.doctor_picture && (
-                                <div style={{ marginTop: '10px' }}>
-                                  <img 
-                                    src={values.doctor_picture} 
-                                    alt="Profile preview" 
-                                    style={{ maxWidth: '100px', maxHeight: '100px' }}
-                                  />
-                                </div>
-                              )}
+                          <div style={{display: 'flex', flexDirection: 'column'}}>
+                          {previewUrl && (
+                            <img src={previewUrl} alt="Preview" style={{ maxWidth: '100%', maxHeight: 200 }} />
+                          )}
                           {uploadedFileName && (
                             <Typography sx={{ fontSize: '0.9rem', color: '#5E4B8B', fontWeight: 'bold' }}>
                               {uploadedFileName}
                             </Typography>
                           )}
+                          </div>
                         </Box>
               </div>
 

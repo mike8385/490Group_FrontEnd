@@ -186,7 +186,7 @@ function Patient_Doctorlist() {
               >
                 <Box sx={{ display: "flex", alignItems: "center" }}>
                   <Avatar
-                    src={doc1}
+                    src={doc.doctor_picture || doc1}
                     sx={{
                       width: '18vh',
                       height: '18vh',
@@ -299,7 +299,7 @@ function Patient_Doctorlist() {
                     <Box sx={{ display: 'flex', flexDirection: 'row' }}>
                       <Box
                         component="img"
-                        src={doc1}
+                        src={selectedDoctor.doctor_picture || doc1}
                         alt="Doctor"
                         sx={{
                           maxHeight: '20vh',

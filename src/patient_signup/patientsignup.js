@@ -1,21 +1,18 @@
-import React, { lazy, useEffect, useState } from 'react';
+import React, {useEffect, useState } from 'react';
 import { useNavigate } from "react-router-dom";
 import "./patientsignup.css";
 import Checkbox from '@mui/material/Checkbox';
 import { Table, TableRow } from '@mui/material';
 import Button from '@mui/material/Button';
 import Box from '@mui/material/Box';
-import InputLabel from '@mui/material/InputLabel';
 import MenuItem from '@mui/material/MenuItem';
-import FormControl from '@mui/material/FormControl';
-import Select, { SelectChangeEvent } from '@mui/material/Select';
+import Select from '@mui/material/Select';
 import Modal from '@mui/material/Modal'; 
 import Typography from '@mui/material/Typography';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import Snackbar from '@mui/material/Snackbar';
 import MuiAlert from '@mui/material/Alert';
-import defaultAvatar from "../patient_dashboard/doctorim/doctor1.png"; // Default avatar image
 
 const apiUrl = process.env.REACT_APP_API_URL;
 
@@ -72,35 +69,32 @@ function Patientsignup() {
   })
 
   const navigate = useNavigate()
-  const label = { inputProps: { 'aria-label': 'Checkbox demo' } };
 
-  const [imageBase64, setImageBase64] = useState('');
+  const [previewUrl, setPreviewUrl] = useState('');
 
-const handleFileUpload = (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
 
-  // Validate file type and size
-  if (!file.type.match('image.*')) {
-    showSnack('Please upload an image file (JPEG, PNG, etc.)');
-    return;
-  }
+  const handleFileUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
 
-  if (file.size > 2 * 1024 * 1024) {
-    showSnack('Image must be smaller than 2MB');
-    return;
-  }
+    if (!file.type.match('image.*')) {
+      showSnack('Please upload an image file (JPEG, PNG, etc.)');
+      return;
+    }
 
-  setUploadedFileName(file.name);
-  const reader = new FileReader();
-  reader.onloadend = () => {
-    const result = reader.result;
-    // Extract just the base64 portion
-    const base64Data = result.split(',')[1];
-    setValues({...values, profile_pic: base64Data});
+    if (file.size > 2 * 1024 * 1024) {
+      showSnack('Image must be smaller than 2MB');
+      return;
+    }
+
+    setUploadedFileName(file.name);
+
+    // ✅ Just save the File object itself
+    setValues({...values, patient_picture: file});
+
+    const preview = URL.createObjectURL(file);
+    setPreviewUrl(preview);
   };
-  reader.readAsDataURL(file);
-};
 
   const [uploadedFileName, setUploadedFileName] = React.useState('');
   const [open, setOpen] = React.useState(false);
@@ -218,41 +212,46 @@ const handleFileUpload = (e) => {
   
     setLoading(true);
   
-    const fullData = {
-      first_name: values.first_name,
-      last_name: values.last_name,
-      pharmacy_name: values.pharmacy_name,
-      pharmacy_address: values.pharmacy_address,
-      pharmacy_zipcode: values.pharm_zip,
-      insurance_provider: values.insur_name,
-      insurance_policy_number: values.policy,
-      insurance_expiration_date: values.exp,
-      patient_email: values.email,
-      patient_password: values.password,
-      mobile_number: values.phone,
-      dob: values.dob,
-      gender: values.gender,
-      height: values.height,
-      weight: values.weight,
-      activity: values.fitness,
-      health_goals: values.goal,
-      dietary_restrictions: dietaryRestrictions.join(', ') || "None",
-      blood_type: values.blood,
-      patient_address: values.address,
-      patient_zipcode: values.zip,
-      patient_city: values.city,
-      patient_state: values.state,
-      medical_conditions: medicalConditions.join(', ') || "None",
-      family_history: "None",
-      past_procedures: "None",
-      profile_pic: values.profile_pic || defaultAvatar
-    };
-    console.log("Data:", fullData);
+    const formData = new FormData();
+
+    // Append all fields
+    formData.append("patient_email", values.email);
+    formData.append("patient_password", values.password);
+    formData.append("first_name", values.first_name);
+    formData.append("last_name", values.last_name);
+
+    formData.append("pharmacy_name", values.pharmacy_name);
+    formData.append("pharmacy_address", values.pharmacy_address);
+    formData.append("pharmacy_zipcode", values.pharmacy_zipcode);
+
+    formData.append("insurance_provider", values.insur_name);
+    formData.append("insurance_policy_number", values.policy);
+    formData.append("insurance_expiration_date", values.exp);
+
+    formData.append("mobile_number", values.phone);
+    formData.append("dob", values.dob);
+    formData.append("gender", values.gender);
+    formData.append("height", values.height);
+    formData.append("weight", values.weight);
+    formData.append("activity", values.fitness);
+    formData.append("health_goals", values.goal);
+    formData.append("dietary_restrictions", values.dietary_restrictions);
+    formData.append("blood_type", values.blood);
+    formData.append("patient_address", values.address);
+    formData.append("patient_zipcode", values.zip);
+    formData.append("patient_city", values.city);
+    formData.append("patient_state", values.state);
+    formData.append("medical_conditions", values.medical_conditions);
+
+    if (values.patient_picture) {
+      console.log("appended");
+      formData.append("patient_picture", values.patient_picture);
+    }
+
   
     fetch(`${apiUrl}/register-patient-with-survey`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(fullData)
+      body: formData,
     })
       .then(res => res.json())
       .then(response => {
@@ -608,7 +607,7 @@ const handleFileUpload = (e) => {
               ...v,
               pharmacy_name: selectedPharmacy.name,
               pharmacy_address: selectedPharmacy.address,
-              pharm_zip: selectedPharmacy.zipcode,
+              pharmacy_zipcode: selectedPharmacy.zipcode,
               pharm_city: selectedPharmacy.city
             }));
           }
@@ -1019,32 +1018,16 @@ const handleFileUpload = (e) => {
                             </Button>
 
                             {/* File name shown to the right of button */}
-                            {values.profile_pic ? (
-                              <div style={{ marginTop: '10px' }}>
-                                <img 
-                                  src={values.profile_pic} 
-                                  alt="Profile preview" 
-                                  style={{ maxWidth: '100px', maxHeight: '100px' }}
-                                />
-                              </div>
-                            ) : (
-                              <div style={{ marginTop: '10px' }}>
-                                <img 
-                                  src={defaultAvatar} 
-                                  alt="Default profile" 
-                                  style={{ 
-                                    maxWidth: '100px', 
-                                    maxHeight: '100px',
-                                    borderRadius: '50%'
-                                  }}
-                                />
-                              </div>
-                            )}
-                            {uploadedFileName && (
-                              <Typography sx={{ fontSize: '0.9rem', color: '#5E4B8B', fontWeight: 'bold' }}>
-                                {uploadedFileName}
-                              </Typography>
-                            )}
+                            <div style={{display: 'flex', flexDirection: 'column'}}>
+                              {previewUrl && (
+                                <img src={previewUrl} alt="Preview" style={{ maxWidth: '100%', maxHeight: 200 }} />
+                              )}
+                              {uploadedFileName && (
+                                <Typography sx={{ fontSize: '0.9rem', color: '#5E4B8B', fontWeight: 'bold' }}>
+                                  {uploadedFileName}
+                                </Typography>
+                              )}
+                            </div>
                           </Box>
                 </div>
 
