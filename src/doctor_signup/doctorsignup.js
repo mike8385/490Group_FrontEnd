@@ -1,21 +1,17 @@
-import React, { lazy, useEffect, useState } from 'react';
+import React, {useState } from 'react';
 import { useNavigate } from "react-router-dom";
 import "./doctorsignup.css";
 import Checkbox from '@mui/material/Checkbox';
-import { Table, TableRow } from '@mui/material';
 import Button from '@mui/material/Button';
 import Box from '@mui/material/Box';
-import InputLabel from '@mui/material/InputLabel';
 import MenuItem from '@mui/material/MenuItem';
-import FormControl from '@mui/material/FormControl';
-import Select, { SelectChangeEvent } from '@mui/material/Select';
+import Select from '@mui/material/Select';
 import Modal from '@mui/material/Modal'; 
 import Typography from '@mui/material/Typography';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import Snackbar from '@mui/material/Snackbar';
 import MuiAlert from '@mui/material/Alert';
-import defaultAvatar from "../doctor_dashboard/doctorim/doctor1.png"; // Default avatar image
 
 
 const apiUrl = process.env.REACT_APP_API_URL;
@@ -65,16 +61,15 @@ function Doctorsignup() {
   const [snackOpen, setSnackOpen] = useState(false);
   const [snackMsg, setSnackMsg] = useState("");
   const [snackType, setSnackType] = useState("error");
-  const [imageBase64, setImageBase64] = useState('');
 
   const [uploadedFileName, setUploadedFileName] = React.useState('');
+  const [previewUrl, setPreviewUrl] = useState('');
 
 
   const handleFileUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    // Validate file type and size
     if (!file.type.match('image.*')) {
       showSnack('Please upload an image file (JPEG, PNG, etc.)');
       return;
@@ -86,13 +81,15 @@ function Doctorsignup() {
     }
 
     setUploadedFileName(file.name);
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      // Save the full data URL for preview and upload convenience
-      setValues({...values, doctor_picture: reader.result});
-    };
-    reader.readAsDataURL(file);
+
+    // ✅ Just save the File object itself
+    setValues({...values, doctor_picture: file});
+
+    const preview = URL.createObjectURL(file);
+    setPreviewUrl(preview);
   };
+
+
 
 
   const showSnack = (msg, type = "error") => {
@@ -247,6 +244,7 @@ function Doctorsignup() {
 
     // Append doctor_picture file only if it exists and is a File
     if (values.doctor_picture) {
+      console.log("appended")
       formData.append("doctor_picture", values.doctor_picture);
     }
 
@@ -685,20 +683,16 @@ function Doctorsignup() {
                           </Button>
 
                           {/* File name shown to the right of button */}
-                          {values.doctor_picture && (
-                                <div style={{ marginTop: '10px' }}>
-                                  <img 
-                                    src={values.doctor_picture} 
-                                    alt="Profile preview" 
-                                    style={{ maxWidth: '100px', maxHeight: '100px' }}
-                                  />
-                                </div>
-                              )}
+                          <div style={{display: 'flex', flexDirection: 'column'}}>
+                          {previewUrl && (
+                            <img src={previewUrl} alt="Preview" style={{ maxWidth: '100%', maxHeight: 200 }} />
+                          )}
                           {uploadedFileName && (
                             <Typography sx={{ fontSize: '0.9rem', color: '#5E4B8B', fontWeight: 'bold' }}>
                               {uploadedFileName}
                             </Typography>
                           )}
+                          </div>
                         </Box>
               </div>
 
