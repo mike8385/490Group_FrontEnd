@@ -8,8 +8,7 @@ import profileBackground from "./profile_assets/profile_background.png"
 import ProfileImg from "./profile_assets/profilePageImg.png"
 import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
-import Snackbar from '@mui/material/Snackbar';
-import MuiAlert from '@mui/material/Alert';
+
 
 
 import { Radio, RadioGroup, Typography,Grid,Button,Box,TextField,FormControlLabel,Modal, IconButton, FormLabel, Avatar } from '@mui/material';
@@ -38,6 +37,7 @@ const handleCloseCreatePost = () => setOpenCreatePost(false);
 
 
 const [uploadedFileName, setUploadedFileName] = React.useState('');
+const [imageFile, setImageFile] = useState(null); // add this
 const [patientInfo, setPatientInfo] = useState(null);
 //Add post useStates
 const [title, setTitle] = useState('');
@@ -178,45 +178,54 @@ const fetchUserPosts = async (user_id) => {
 //add new post handling
 const handleCreatePost = async () => {
   const user_id = patientInfo?.user_id;
-  const meal_name = title;
-  const meal_calories = parseInt(calories);
   const tagToSubmit = selectedTag === "Other" ? customTag : selectedTag;
 
-  if (!user_id || !meal_name || !description || !imageBase64 || !tagToSubmit) {
+  if (!user_id || !title || !description || !imageFile || !tagToSubmit) {
     showSnack("Please fill out all fields.");
     return;
   }
 
   try {
+    // 1. Upload the image to backend
+    const imageForm = new FormData();
+    imageForm.append("image", imageFile);
+
+    const uploadRes = await fetch(`${apiUrl}/upload-image`, {
+      method: "POST",
+      body: imageForm
+    });
+
+    if (!uploadRes.ok) throw new Error("Image upload failed");
+    const { url: imageUrl } = await uploadRes.json(); // get public image URL
+
+    // 2. Then send the post data with that URL
     const res = await fetch(`${apiUrl}/add-post`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        user_id:user_id,
-        meal_name:title,
-        meal_calories:meal_calories,
-        description:description,
-        picture: imageBase64,
+        user_id,
+        meal_name: title,
+        meal_calories: parseInt(calories),
+        description,
+        picture: imageUrl, // use public image URL
         add_tag: tagToSubmit
       })
     });
-    console.log('userId',user_id);
+
     if (!res.ok) throw new Error("Failed to create post");
 
-    const data = await res.json();
-    console.log("Post created:", data);
-    showSnack("Post successfully created!", "sucess");
+    showSnack("Post successfully created!", "success");
 
-    // Optional: Reset form
+    // Reset form
     setTitle('');
     setCalories('');
     setDescription('');
     setSelectedTag('');
     setCustomTag('');
     setUploadedFileName('');
-    setImageBase64('');
+    setImageFile(null);
     handleCloseCreatePost();
-    fetchUserPosts(user_id); // Refresh user's posts
+    fetchUserPosts(user_id);
   } catch (error) {
     console.error("Error creating post:", error);
     showSnack("There was a problem creating the post.");
@@ -382,23 +391,13 @@ const handleCreatePost = async () => {
   accept="image/*" 
   type="file" 
   onChange={(e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setUploadedFileName(file.name);
-      const reader = new FileReader();
-reader.onloadend = () => {
-  const result = reader.result;
-  if (typeof result === "string" && result.includes(',')) {
-    const base64Only = result.split(',')[1]; // 👈 only get base64
-    console.log('imageulr', base64Only)
-    setImageBase64(base64Only);
-  } else {
-    console.warn("Unexpected file format for base64 image.");
+  const file = e.target.files[0];
+  if (file) {
+    setUploadedFileName(file.name);
+    setImageFile(file); // 👈 store the raw file instead of converting to base64
   }
-};
-      reader.readAsDataURL(file);
-    }
-  }}
+}}
+
 />
 
   </Button>
